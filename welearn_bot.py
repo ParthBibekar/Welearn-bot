@@ -2,7 +2,6 @@
 
 from requests import Session
 from bs4 import BeautifulSoup as bs
-import requests
 import re
 import shutil, os
 from os.path import expanduser
@@ -33,11 +32,22 @@ with Session() as s:
         
     # We need to scrape objects with class="aalink coursename mr-2" 
     # URL from which pdfs to be downloaded
-    PH2202 = s.get("https://welearn.iiserkol.ac.in/course/view.php?id=1062")
-    # print(PH2202)
-    # print(PH2202.content)
-    soup = bs(PH2202.content, "html.parser")
-    with open("PH2202.html", "w", encoding = 'utf-8') as file:
+    coursesList = soup.find("li", {"data-key": "mycourses"})
+    courseLinks = coursesList.findAll("a", "list-group-item")
+    courses = dict()
+    for course in courseLinks:
+        courseUrl = course['href']
+        courseName = course.find("span").contents[0]
+        courses[courseName] = courseUrl
+    
+    print("Select a course :")
+    for name in courses.keys():
+        print(name)
+    print()
+    selectedCourseName = input()
+    selectedCourse = s.get(courses[selectedCourseName])
+    soup = bs(selectedCourse.content, "html.parser")
+    with open(selectedCourseName + ".html", "w", encoding = 'utf-8') as file:
         # prettify the soup object and convert it into a string  
         file.write(str(soup.prettify()))
     
@@ -67,14 +77,12 @@ with Session() as s:
                     urls = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', line)
                     
             # Write content in pdf file        
+            if not os.path.exists(selectedCourseName):
+                os.makedirs(selectedCourseName)
             for j in range(len(urls)):
                 if not(j in link):
-                    pdf = open(str(i) + ".pdf", 'wb')
+                    pdf = open(selectedCourseName + "/" + str(i) + ".pdf", 'wb')
                     pdf.write(response.content)
                     pdf.close()
-                    
-                    # Move files to designated folder
-                    #path = os.path.abspath(str(i)+".pdf")
-                    #shutil.move(path,"/PH2202")
                     
             print("File ", i, " downloaded")
