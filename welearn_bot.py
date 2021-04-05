@@ -3,13 +3,23 @@
 from requests import Session
 from bs4 import BeautifulSoup as bs
 import re
-import shutil, os
-from os.path import expanduser
+import shutil, os, sys
+import argparse
+import urllib
 
+parser = argparse.ArgumentParser(description="WeLearn bot.")
+
+parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from")
+parser.add_argument("--listcourses", "-l", action="store_true", help="display available courses and exit")
+
+args = parser.parse_args()
+if len(args.courses) == 0 and not args.listcourses:
+    print("No course names selected. Use the -h flag for usage.")
+    sys.exit()
 
 # Create a file in your home directory called .welearnrc
 # Put your username and password on separate lines
-configfile = expanduser("~/.welearnrc")
+configfile = os.path.expanduser("~/.welearnrc")
 username = ''
 password = ''
 with open(configfile, "r") as config:
@@ -40,49 +50,39 @@ with Session() as s:
         courseName = course.find("span").contents[0]
         courses[courseName] = courseUrl
     
-    print("Select a course :")
-    for name in courses.keys():
-        print(name)
-    print()
-    selectedCourseName = input()
-    selectedCourse = s.get(courses[selectedCourseName])
-    soup = bs(selectedCourse.content, "html.parser")
-    with open(selectedCourseName + ".html", "w", encoding = 'utf-8') as file:
-        # prettify the soup object and convert it into a string  
-        file.write(str(soup.prettify()))
+    if args.listcourses:
+        for name in courses.keys():
+            print(name)
+        sys.exit()
     
-    links = soup.find_all('a',class_="aalink")
-    # print(links)
-    with open("links.html", "w", encoding = 'utf-8') as file:
-        # prettify the soup object and convert it into a string
+    for selectedCourseName in args.courses:
+        if not selectedCourseName in courses.keys():
+            print(selectedCourseName + " not in list of available courses!")
+            continue
+        selectedCourse = s.get(courses[selectedCourseName])
+        soup = bs(selectedCourse.content, "html.parser")
+        with open(selectedCourseName + ".html", "w", encoding = 'utf-8') as file:
+            # prettify the soup object and convert it into a string  
+            file.write(str(soup.prettify()))
+        
+        links = soup.find_all('a',class_="aalink")
+        # print(links)
+        with open("links.html", "w", encoding = 'utf-8') as file:
+            # prettify the soup object and convert it into a string
+            for link in links:
+                file.write(str(link.get('href')) + "\n")
+                #print(link.get('href'))
         for link in links:
-            file.write(str(link.get('href')) + "\n")
-            #print(link.get('href'))
-    i=0
-    for link in links:
-        if ('/mod/resource/view.php' in link.get('href')):
-            i += 1
-            print("Downloading file: ", i)
-  
-            # Get response object for link
-            response = s.get(link.get('href'))
-            
-            # Check for already downloaded files files 
-            f = open("output.txt", "w")
-            f1 = open("output.txt","a")
-            print(link, file=f1)
-            urls = ''
-            with open("output.txt") as txt_file:
-                for line in txt_file:
-                    urls = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', line)
-                    
-            # Write content in pdf file        
-            if not os.path.exists(selectedCourseName):
-                os.makedirs(selectedCourseName)
-            for j in range(len(urls)):
-                if not(j in link):
-                    pdf = open(selectedCourseName + "/" + str(i) + ".pdf", 'wb')
-                    pdf.write(response.content)
-                    pdf.close()
-                    
-            print("File ", i, " downloaded")
+            if ('/mod/resource/view.php' in link.get('href')):
+                
+                response = s.get(link.get('href'))
+                filename = urllib.parse.unquote(response.url.split("/")[-1])
+                filepath = os.path.join(selectedCourseName, filename)
+                
+                if not os.path.exists(selectedCourseName):
+                    os.makedirs(selectedCourseName)
+                
+                with open(filepath, "wb") as download:
+                    download.write(response.content)
+
+                print("File " + filepath + " downloaded")
