@@ -81,6 +81,10 @@ with Session() as s:
                 filename = urllib.parse.unquote(response.url.split("/")[-1])
                 filepath = os.path.join(selected_course_name, filename)
                 
+                # Skip embedded resources. Temporary fix
+                if filename.startswith("view.php"):
+                    continue
+                
                 if not os.path.exists(selected_course_name):
                     os.makedirs(selected_course_name)
                 
