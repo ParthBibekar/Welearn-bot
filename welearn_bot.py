@@ -28,59 +28,45 @@ with open(configfile, "r") as config:
     password = lines[1].strip()
 
 with Session() as s:
-    site = s.get("https://welearn.iiserkol.ac.in/login/")
-    bs_content = bs(site.content, "html.parser")
-    token = bs_content.find("input", {"name":"logintoken"})["value"]
-    login_data = {"username": username,"password": password, "logintoken":token}
-    s.post("https://welearn.iiserkol.ac.in/login/",login_data)
+    login_page = s.get("https://welearn.iiserkol.ac.in/login/")
+    login_content = bs(login_page.content, "html.parser")
+    token = login_content.find("input", {"name": "logintoken"})["value"]
+    login_data = {"username": username,"password": password, "logintoken": token}
+    s.post("https://welearn.iiserkol.ac.in/login/", login_data)
     home_page = s.get("https://welearn.iiserkol.ac.in/my/")
-    # print(home_page.content)
-    soup = bs(home_page.content, "html.parser")
-    with open("output.html", "w", encoding = 'utf-8') as file:
-        # prettify the soup object and convert it into a string  
-        file.write(str(soup.prettify()))
+    home_content = bs(home_page.content, "html.parser")
         
-    # We need to scrape objects with class="aalink coursename mr-2" 
-    # URL from which pdfs to be downloaded
-    coursesList = soup.find("li", {"data-key": "mycourses"})
-    courseLinks = coursesList.findAll("a", "list-group-item")
+    courses_list = home_content.find("li", {"data-key": "mycourses"})
+    course_links = courses_list.findAll("a", "list-group-item")
     courses = dict()
-    for course in courseLinks:
-        courseUrl = course['href']
-        courseName = course.find("span").contents[0]
-        courses[courseName] = courseUrl
+    for course in course_links:
+        course_url = course['href']
+        course_name = course.find("span").contents[0]
+        courses[course_name] = course_url
     
     if args.listcourses:
         for name in courses.keys():
             print(name)
         sys.exit()
     
-    for selectedCourseName in args.courses:
-        if not selectedCourseName in courses.keys():
-            print(selectedCourseName + " not in list of available courses!")
+    for selected_course_name in args.courses:
+        if not selected_course_name in courses.keys():
+            print(selected_course_name + " not in list of available courses!")
             continue
-        selectedCourse = s.get(courses[selectedCourseName])
-        soup = bs(selectedCourse.content, "html.parser")
-        with open(selectedCourseName + ".html", "w", encoding = 'utf-8') as file:
-            # prettify the soup object and convert it into a string  
-            file.write(str(soup.prettify()))
+        selected_course_page = s.get(courses[selected_course_name])
+        selected_course_content = bs(selected_course_page.content, "html.parser")
         
-        links = soup.find_all('a',class_="aalink")
-        # print(links)
-        with open("links.html", "w", encoding = 'utf-8') as file:
-            # prettify the soup object and convert it into a string
-            for link in links:
-                file.write(str(link.get('href')) + "\n")
-                #print(link.get('href'))
+        links = selected_course_content.findAll('a', "aalink")
+        
         for link in links:
             if ('/mod/resource/view.php' in link.get('href')):
                 
                 response = s.get(link.get('href'))
                 filename = urllib.parse.unquote(response.url.split("/")[-1])
-                filepath = os.path.join(selectedCourseName, filename)
+                filepath = os.path.join(selected_course_name, filename)
                 
-                if not os.path.exists(selectedCourseName):
-                    os.makedirs(selectedCourseName)
+                if not os.path.exists(selected_course_name):
+                    os.makedirs(selected_course_name)
                 
                 with open(filepath, "wb") as download:
                     download.write(response.content)
