@@ -133,3 +133,6 @@ dmypy.json
 *.html
 *.pdf
 *.txt
+
+# Ignore the cache
+link_cache

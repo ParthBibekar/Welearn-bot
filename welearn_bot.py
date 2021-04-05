@@ -51,6 +51,13 @@ with Session() as s:
             print(name)
         sys.exit()
     
+    # Read from a cache of links
+    link_cache = set()
+    if os.path.exists("link_cache"):
+        with open("link_cache") as link_cache_file:
+            for link in link_cache_file.readlines():
+                link_cache.add(link.strip())
+    
     # Loop through all given course IDs
     for selected_course_name in args.courses:
         # Ensure that the course name is valid
@@ -64,10 +71,12 @@ with Session() as s:
         links = selected_course_content.findAll('a', "aalink")
         
         for link in links:
+            # Skip cached links
+            if link['href'] in link_cache:
+                continue
             # Only download 'resource' links
-            if ('/mod/resource/view.php' in link.get('href')):
-                response = s.get(link.get('href'))
-
+            if ('/mod/resource/view.php' in link['href']):
+                response = s.get(link['href'])
                 # Extract the file name and put the file in an appropriate directory
                 filename = urllib.parse.unquote(response.url.split("/")[-1])
                 filepath = os.path.join(selected_course_name, filename)
@@ -79,3 +88,9 @@ with Session() as s:
                     download.write(response.content)
 
                 print("Downloaded " + filepath)
+                link_cache.add(link['href'])
+
+    # Update cached links
+    with open("link_cache", "w") as link_cache_file:
+        for link in list(link_cache):
+            link_cache_file.write(link + "\n")
