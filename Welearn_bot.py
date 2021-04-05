@@ -1,14 +1,28 @@
+#!/usr/bin/env python3
+
 from requests import Session
 from bs4 import BeautifulSoup as bs
 import requests
 import re
 import shutil, os
+from os.path import expanduser
+
+
+# Create a file in your home directory called .welearnrc
+# Put your username and password on separate lines
+configfile = expanduser("~/.welearnrc")
+username = ''
+password = ''
+with open(configfile, "r") as config:
+    lines = config.readlines()
+    username = lines[0].strip()
+    password = lines[1].strip()
 
 with Session() as s:
     site = s.get("https://welearn.iiserkol.ac.in/login/")
     bs_content = bs(site.content, "html.parser")
     token = bs_content.find("input", {"name":"logintoken"})["value"]
-    login_data = {"username":"aaa19ms000","password":"Enter_password", "logintoken":token}
+    login_data = {"username": username,"password": password, "logintoken":token}
     s.post("https://welearn.iiserkol.ac.in/login/",login_data)
     home_page = s.get("https://welearn.iiserkol.ac.in/my/")
     # print(home_page.content)
@@ -47,6 +61,7 @@ with Session() as s:
             f = open("output.txt", "w")
             f1 = open("output.txt","a")
             print(link, file=f1)
+            urls = ''
             with open("output.txt") as txt_file:
                 for line in txt_file:
                     urls = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', line)
