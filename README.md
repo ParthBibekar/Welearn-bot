@@ -27,3 +27,11 @@ To pull all files from the courses AB1101 and XY5505, run
 ```
 ./welearn_bot.py AB1101 XY5505
 ```
+
+## TODO
+- [x] Download files in separate directories
+- [x] Allow multiple courses, list courses
+- [x] Do not repeat downloads (cache past links)
+- [ ] Deal with image files, which are nested within html pages
+- [ ] Allow finer control over resources to download (time range, filetype)
+- [ ] Deal with files updated over time
