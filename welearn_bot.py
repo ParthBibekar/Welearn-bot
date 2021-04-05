@@ -53,8 +53,8 @@ with Session() as s:
     
     # Read from a cache of links
     link_cache = set()
-    if os.path.exists("link_cache"):
-        with open("link_cache") as link_cache_file:
+    if os.path.exists(".link_cache"):
+        with open(".link_cache") as link_cache_file:
             for link in link_cache_file.readlines():
                 link_cache.add(link.strip())
     
@@ -95,6 +95,6 @@ with Session() as s:
                 link_cache.add(link['href'])
 
     # Update cached links
-    with open("link_cache", "w") as link_cache_file:
+    with open(".link_cache", "w") as link_cache_file:
         for link in list(link_cache):
             link_cache_file.write(link + "\n")
