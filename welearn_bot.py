@@ -9,8 +9,10 @@ import urllib
 # Get command line options
 parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
 
-parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from")
+parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects all available courses.")
 parser.add_argument("-l", "--listcourses", action="store_true", help="display available courses and exit")
+parser.add_argument("-la", "--listassignments", action="store_true", help="display available assignments in given courses and exit")
+parser.add_argument("-d", "--dueassignments", action="store_true", help="display only due assignments, if -la was selected")
 
 args = parser.parse_args()
 if len(args.courses) == 0 and not args.listcourses:
@@ -58,6 +60,10 @@ with Session() as s:
             for link in link_cache_file.readlines():
                 link_cache.add(link.strip())
     
+    # Select all courses if 'ALL' keyword is used
+    if 'ALL' in map(str.upper, args.courses):
+        args.courses = courses.keys()
+    
     # Loop through all given course IDs
     for selected_course_name in args.courses:
         # Ensure that the course name is valid
@@ -74,8 +80,50 @@ with Session() as s:
             # Skip cached links
             if link['href'] in link_cache:
                 continue
-            # Only download 'resource' links
-            if ('/mod/resource/view.php' in link['href']):
+
+            if args.listassignments:
+                if'/mod/assign/view.php' in link['href']:
+                    assigment_page = s.get(link['href'])
+                    assignment_content = bs(assigment_page.content, "html.parser")
+                    
+                    topic = assignment_content.find("h2").text
+                    intro = assignment_content.find("div", {"id": "intro"})
+                    assignment_links = []
+                    description = intro.find("div", "no-overflow")
+                    if description:
+                        description = description.text
+                    else:
+                        description = ''
+                    for l in intro.findAll("a"):
+                        assignment_links.append(l['href'])
+                    submission_table = assignment_content.find("div", "submissionstatustable").find("table")
+                    submission_status = ''
+                    due_date = ''
+                    time_remaining = ''
+                    for row in submission_table.findAll("tr"):
+                        first, second = row.find("th"), row.find("td")
+                        if first.text == "Submission status":
+                            submission_status = second.text
+                        elif first.text == "Due date":
+                            due_date = second.text
+                        elif first.text == "Time remaining":
+                            time_remaining = second.text
+                    if not args.dueassignments or \
+                            ("Submitted" not in submission_status and \
+                            "overdue" not in time_remaining):
+                        print(f"{selected_course_name} : {topic}")
+                        print(f"    {description}")
+                        print(f"    Due date        : {due_date}")
+                        print(f"    Status          : {submission_status}")
+                        print(f"    Time remaining  : {time_remaining}")
+                        if len(assignment_links) > 0:
+                            print( "    Links : ")
+                            for l in assignment_links:
+                                print("        " + l)
+                        print()
+                continue
+
+            if '/mod/resource/view.php' in link['href']:
                 response = s.get(link['href'])
                 # Extract the file name and put the file in an appropriate directory
                 filename = urllib.parse.unquote(response.url.split("/")[-1])
