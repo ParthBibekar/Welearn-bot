@@ -7,10 +7,10 @@ import argparse
 import urllib
 
 # Get command line options
-parser = argparse.ArgumentParser(description="WeLearn bot.")
+parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
 
 parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from")
-parser.add_argument("--listcourses", "-l", action="store_true", help="display available courses and exit")
+parser.add_argument("-l", "--listcourses", action="store_true", help="display available courses and exit")
 
 args = parser.parse_args()
 if len(args.courses) == 0 and not args.listcourses:

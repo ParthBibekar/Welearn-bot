@@ -6,16 +6,16 @@ Create a file in your home folder called `.welearnrc`. Inside, put your username
 
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot.py [-h] [--listcourses] [courses ...]
+usage: welearn_bot.py [-h] [-l] [courses ...]
 
-WeLearn bot.
+A bot which can batch download files from WeLearn.
 
 positional arguments:
   courses            IDs of the courses to download files from
 
 optional arguments:
   -h, --help         show this help message and exit
-  --listcourses, -l  display available courses and exit
+  -l, --listcourses  display available courses and exit
 ```
 
 ### Examples
