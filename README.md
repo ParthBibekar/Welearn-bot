@@ -1,6 +1,9 @@
 # Welearn-bot
 A bot that downloads all the necessary files from all the course pages from Welearn and moves them to designated folders on your local machine.
 
+## Dependencies
+This script runs on python3, and requires the beautifulsoup4 library. Run `pip3 install bs4` to install it.
+
 ## Usage and configuration
 Create a file in your home folder called `.welearnrc`. Inside, put your username in the first line and your password in the second line.
 
