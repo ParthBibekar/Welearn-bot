@@ -1,5 +1,5 @@
 # Welearn-bot
-A bot that downloads all the necessary files from all the course pages from Welearn and moves them to designated folders on your local machine.
+A bot that downloads all the necessary files from Welearn and moves them to designated folders on your local machine. It can also list all your assingnments with due dates.
 
 ## Dependencies
 This script runs on python3, and requires the *requests* and *beautifulsoup4* libraries. Run `pip3 install requests bs4` to install them.
