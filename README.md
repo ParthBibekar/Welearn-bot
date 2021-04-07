@@ -2,14 +2,14 @@
 A bot that downloads all the necessary files from all the course pages from Welearn and moves them to designated folders on your local machine.
 
 ## Dependencies
-This script runs on python3, and requires the *requests* and *beautifulsoup4* libraries. Run `pip3 install requests bs4` to install them.
+This script runs on python3, and requires the `requests` and `beautifulsoup4` libraries. Run `pip3 install requests bs4` to install them.
 
 ## Usage and configuration
 Create a file in your home folder called `.welearnrc`. Inside, put your username in the first line and your password in the second line.
 
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [-l] [-la] [-d] [courses ...]
+usage: welearn_bot [-h] [-l] [-la] [-d] [-f] [courses ...]
 
 A bot which can batch download files from WeLearn.
 
@@ -22,6 +22,7 @@ optional arguments:
   -la, --listassignments
                         display available assignments in given courses and exit
   -d, --dueassignments  display only due assignments, if -la was selected
+  -f, --forcedownload   force download files even if already downloaded
 ```
 
 ### Examples

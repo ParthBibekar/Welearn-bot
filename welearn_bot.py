@@ -13,6 +13,7 @@ parser.add_argument("courses", nargs="*", help="IDs of the courses to download f
 parser.add_argument("-l", "--listcourses", action="store_true", help="display available courses and exit")
 parser.add_argument("-la", "--listassignments", action="store_true", help="display available assignments in given courses and exit")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="display only due assignments, if -la was selected")
+parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded")
 
 args = parser.parse_args()
 if len(args.courses) == 0 and not args.listcourses:
@@ -77,8 +78,8 @@ with Session() as s:
         links = selected_course_content.findAll('a', "aalink")
         
         for link in links:
-            # Skip cached links
-            if link['href'] in link_cache:
+            # Skip cached links, unless --forcedownload
+            if not args.forcedownload and link['href'] in link_cache:
                 continue
 
             if args.listassignments:
