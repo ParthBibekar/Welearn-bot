@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup as bs
 from configparser import RawConfigParser
 from datetime import datetime
 from datetime import timedelta
+from sys import platform
 import os, sys
 import argparse
 import json
@@ -22,7 +23,12 @@ parser.add_argument("-f", "--forcedownload", action="store_true", help="force do
 args = parser.parse_args()
 
 # Read the .welearnrc file from the home directory, and extract username and password
-configfile = os.path.expanduser("~/.welearnrc")
+if platform == "linux" or platform == "linux2":
+    configfile = os.path.expanduser("~/.welearnrc")
+elif platform == "darwin":
+    configfile = os.path.expanduser("~/.welearnrc")
+elif platform == "win32":
+    configfile = os.path.expanduser("welearnrc.ini")
 config = RawConfigParser(allow_no_value=True)
 config.read(configfile)
 username = config["auth"]["username"]
