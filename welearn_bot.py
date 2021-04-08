@@ -2,6 +2,7 @@
 
 from requests import Session
 from bs4 import BeautifulSoup as bs
+from configparser import RawConfigParser
 import os, sys
 import argparse
 import urllib
@@ -22,12 +23,10 @@ if len(args.courses) == 0 and not args.listcourses:
 
 # Read the .welearnrc file from the home directory, and extract username and password
 configfile = os.path.expanduser("~/.welearnrc")
-username = ''
-password = ''
-with open(configfile, "r") as config:
-    lines = config.readlines()
-    username = lines[0].strip()
-    password = lines[1].strip()
+config = RawConfigParser()
+config.read(configfile)
+username = config.get("setup", "username")
+password = config.get("setup", "password")
 
 with Session() as s:
     # Login to WeLearn with supplied credentials
@@ -38,7 +37,7 @@ with Session() as s:
     s.post("https://welearn.iiserkol.ac.in/login/", login_data)
     home_page = s.get("https://welearn.iiserkol.ac.in/my/")
     home_content = bs(home_page.content, "html.parser")
-    
+
     # Build a list of courses and course page links
     courses_list = home_content.find("li", {"data-key": "mycourses"})
     course_links = courses_list.findAll("a", "list-group-item")
@@ -47,24 +46,24 @@ with Session() as s:
         course_url = course['href']
         course_name = course.find("span").contents[0]
         courses[course_name] = course_url
-    
+
     # If specified, only display the list of courses and exit
     if args.listcourses:
         for name in courses.keys():
             print(name)
         sys.exit()
-    
+
     # Read from a cache of links
     link_cache = set()
     if os.path.exists(".link_cache"):
         with open(".link_cache") as link_cache_file:
             for link in link_cache_file.readlines():
                 link_cache.add(link.strip())
-    
+
     # Select all courses if 'ALL' keyword is used
     if 'ALL' in map(str.upper, args.courses):
         args.courses = courses.keys()
-    
+
     # Loop through all given course IDs
     for selected_course_name in args.courses:
         # Ensure that the course name is valid
@@ -76,7 +75,7 @@ with Session() as s:
         selected_course_page = s.get(courses[selected_course_name])
         selected_course_content = bs(selected_course_page.content, "html.parser")
         links = selected_course_content.findAll('a', "aalink")
-        
+
         for link in links:
             # Skip cached links, unless --forcedownload
             if not args.forcedownload and link['href'] in link_cache:
@@ -86,7 +85,7 @@ with Session() as s:
                 if'/mod/assign/view.php' in link['href']:
                     assigment_page = s.get(link['href'])
                     assignment_content = bs(assigment_page.content, "html.parser")
-                    
+
                     topic = assignment_content.find("h2").text
                     intro = assignment_content.find("div", {"id": "intro"})
                     assignment_links = []
@@ -129,14 +128,14 @@ with Session() as s:
                 # Extract the file name and put the file in an appropriate directory
                 filename = urllib.parse.unquote(response.url.split("/")[-1])
                 filepath = os.path.join(selected_course_name, filename)
-                
+
                 # Skip embedded resources. Temporary fix
                 if filename.startswith("view.php"):
                     continue
-                
+
                 if not os.path.exists(selected_course_name):
                     os.makedirs(selected_course_name)
-                
+
                 with open(filepath, "wb") as download:
                     download.write(response.content)
 
