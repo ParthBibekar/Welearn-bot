@@ -12,16 +12,14 @@ import json
 # Get command line options
 parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
 
-parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects all configured courses.")
+parser.add_argument("courses", nargs="+", help="IDs of the courses to download files from. The word ALL selects all configured courses.")
 parser.add_argument("-l", "--listcourses", action="store_true", help="display configured courses (ALL) and exit")
 parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
-parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded")
+parser.add_argument("-i", "--ignoretypes", nargs="+", help="ignores the specified extensions when downloading, overrides .welearnrc. Use NONE to ignore no types.")
+parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
 
 args = parser.parse_args()
-if len(args.courses) == 0 and not args.listcourses:
-    print("No course names selected. Use the -h flag for usage.")
-    sys.exit()
 
 # Read the .welearnrc file from the home directory, and extract username and password
 configfile = os.path.expanduser("~/.welearnrc")
@@ -45,7 +43,30 @@ if args.listcourses:
     for course in all_courses:
         print(course)
     sys.exit(0)
-        
+
+# Read ignore types from config
+ignore_types = []
+try:
+    ignores = config["files"]["ignore"]
+    ignore_types = ignores.split(",")
+except:
+    ignore_types = []
+
+# Override config with options
+if args.ignoretypes:
+    if "NONE" in map(str.upper, args.ignoretypes):
+        ignore_types = []
+    else:
+        ignore_types = args.ignoretypes
+
+# Override ignore with force
+if args.forcedownload:
+    ignore_types = []
+
+ignore_types = map(str.strip, ignore_types)
+ignore_types = map(str.upper, ignore_types)
+ignore_types = list(ignore_types)
+
 # Read from a cache of links
 link_cache = set()
 if os.path.exists(".link_cache"):
@@ -66,9 +87,16 @@ with Session() as s:
         filename = res['filename']
         filepath = os.path.join(prefix, filename)
         fileurl = res['fileurl']
+        _, extension = os.path.splitext(filename)
+        extension = str.upper(extension[1:])
         
         # Only download if forced, or not already downloaded
         if not args.forcedownload and fileurl in link_cache:
+            return
+        
+        # Ignore files with specified extensions
+        if extension in ignore_types:
+            print(" " * indent + "Ignoring " + filepath)
             return
         
         # Create the course folder if not already existing

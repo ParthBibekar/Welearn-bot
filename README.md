@@ -23,14 +23,22 @@ PH2202
 CH3303
 LS4404
 ES5505
+
+[files]
+ignore=mp4,mkv
 ```
 The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
 This way, you can choose to omit redundant courses in this section.
 
+The `[files]` section lets you specify settings about the organization of your files.
+All files with extensions listed in the `ignore` option will be not be downloaded.
+This is useful for ignoring typically large files such as video files.
+This setting is overridden by the `--ignoretypes` flag, which in turn is overridden by the `--forcedownload` flag
+
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [-l] [-a] [-d] [-f] [courses ...]
+usage: welearn_bot [-h] [-l] [-a] [-d] [-i IGNORETYPES [IGNORETYPES ...]] [-f] courses [courses ...]
 
 A bot which can batch download files from WeLearn.
 
@@ -42,7 +50,9 @@ optional arguments:
   -l, --listcourses     display configured courses (ALL) and exit
   -a, --assignments     show all assignments in given courses, download attachments and exit
   -d, --dueassignments  show only due assignments, if -a was selected
-  -f, --forcedownload   force download files even if already downloaded
+  -i IGNORETYPES [IGNORETYPES ...], --ignoretypes IGNORETYPES [IGNORETYPES ...]
+                        ignores the specified extensions when downloading, overrides .welearnrc. Use NONE to ignore no types.
+  -f, --forcedownload   force download files even if already downloaded/ignored
 ```
 
 ### Examples
@@ -58,7 +68,19 @@ To list due assignments (due date in the future) from all courses, run
 ```
 ./welearn_bot.py -ad ALL
 ```
-To download all resources from the course PH2202, even if already downloaded and present, run
+To download all resources from the course CH3303, ignoring pdf files, run
+```
+./welearn_bot.py -i pdf -- CH3303
+```
+Note the use of `--` which is essential for separating the `IGNORETYPES` from the `courses`. The following format is preferred.
+```
+./welearn_bot.py CH3303 -i pdf
+```
+To override the `.welearnrc` ignore settings and allow all extensions, but still respect past downloads, run 
+```
+./welearn_bot.py CH3303 -i NONE
+```
+To force download all resources from the course PH2202, even if already downloaded and present or set to be ignored, run
 ```
 ./welearn_bot.py -f PH2202
 ```
