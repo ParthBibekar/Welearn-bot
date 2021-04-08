@@ -7,7 +7,7 @@ This is a bot which lets you interact with WeLearn from the command line. It can
 This script runs on python3, and requires the `requests` and `beautifulsoup4` libraries. Run `pip3 install requests bs4` to install them.
 
 ## Usage and configuration
-Create a file in your home folder called `.welearnrc`. Inside, add the following lines and will the `<>` placeholders with your details.
+Create a file in your home folder called `.welearnrc`. Inside, add the following lines and fill the `<>` placeholders with your details.
 
 ```
 [setup]
