@@ -1,7 +1,7 @@
 # Welearn-bot
 This is a bot which lets you interact with WeLearn from the command line. It can
-- Download all files/resources from multiple courses and organize them in designated folders.
-- List your assignments with details, or just your due assignments.
+- Download all files/resources from your courses and organize them in designated folders.
+- Show your assignments, filter due assignments.
 
 ## Requirements
 This script runs on `python3`. To install all dependencies (`requests` and `bs4`), run
@@ -10,49 +10,61 @@ pip3 install -r requirements.txt
 ```
 
 ## Configuration
-Create a file in your home folder called `.welearnrc`. Inside, add the following lines and fill the `<>` placeholders with your details.
+Create a file in your home folder called `.welearnrc`. Inside, fill in your details in the following format.
 
 ```
-[setup]
-username = <your-username>
-password = <your-password>
+[auth]
+username = AzureDiamond
+password = hunter2
+
+[courses]
+MA1101
+PH2202
+CH3303
+LS4404
+ES5505
 ```
+The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
+This way, you can choose to omit redundant courses in this section.
 
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [-l] [-la] [-d] [-f] [courses ...]
+usage: welearn_bot [-h] [-l] [-a] [-d] [-f] [courses ...]
 
 A bot which can batch download files from WeLearn.
 
 positional arguments:
-  courses               IDs of the courses to download files from. The word ALL selects all available courses.
+  courses               IDs of the courses to download files from. The word ALL selects all configured courses.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -l, --listcourses     display available courses and exit
-  -la, --listassignments
-                        display available assignments in given courses and exit
-  -d, --dueassignments  display only due assignments, if -la was selected
+  -l, --listcourses     display configured courses (ALL) and exit
+  -a, --assignments     show all assignments in given courses, download attachments and exit
+  -d, --dueassignments  show only due assignments, if -a was selected
   -f, --forcedownload   force download files even if already downloaded
 ```
 
 ### Examples
-To get a list of available courses, run
+To pull all files from the courses MA1101 and CH3303, run
+```
+./welearn_bot.py MA1101 CH3303
+```
+To show all assignments and download their attachments from the course MA1101, run
+```
+./welearn_bot.py -a MA1101
+```
+To list due assignments (due date in the future) from all courses, run
+```
+./welearn_bot.py -ad ALL
+```
+To download all resources from the course PH2202, even if already downloaded and present, run
+```
+./welearn_bot.py -f PH2202
+```
+To get a list of courses specified in your `.welearnrc`, run
 ```
 ./welearn_bot.py -l
-```
-To pull all files from the courses AB1101 and XY5505, run
-```
-./welearn_bot.py AB1101 XY5505
-```
-To list all assignments from the course AB1101, run
-```
-./welearn_bot.py -la AB1101
-```
-To list due assignments (due date in the future, no submission made) from all courses, run
-```
-./welearn_bot.py -la -d ALL
 ```
 
 ## TODO
@@ -60,6 +72,6 @@ To list due assignments (due date in the future, no submission made) from all co
 - [x] Allow multiple courses, list courses
 - [x] Do not repeat downloads (cache past links)
 - [x] List assignments
-- [ ] Deal with image files, which are nested within html pages
+- [x] Deal with image files and other resources, which are nested within a resource page
 - [ ] Allow finer control over resources to download (time range, filetype)
 - [ ] Deal with files updated over time

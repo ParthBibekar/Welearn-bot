@@ -3,17 +3,19 @@
 from requests import Session
 from bs4 import BeautifulSoup as bs
 from configparser import RawConfigParser
+from datetime import datetime
+from datetime import timedelta
 import os, sys
 import argparse
-import urllib
+import json
 
 # Get command line options
 parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
 
-parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects all available courses.")
-parser.add_argument("-l", "--listcourses", action="store_true", help="display available courses and exit")
-parser.add_argument("-la", "--listassignments", action="store_true", help="display available assignments in given courses and exit")
-parser.add_argument("-d", "--dueassignments", action="store_true", help="display only due assignments, if -la was selected")
+parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects all configured courses.")
+parser.add_argument("-l", "--listcourses", action="store_true", help="display configured courses (ALL) and exit")
+parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
+parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded")
 
 args = parser.parse_args()
@@ -23,124 +25,132 @@ if len(args.courses) == 0 and not args.listcourses:
 
 # Read the .welearnrc file from the home directory, and extract username and password
 configfile = os.path.expanduser("~/.welearnrc")
-config = RawConfigParser()
+config = RawConfigParser(allow_no_value=True)
 config.read(configfile)
-username = config.get("setup", "username")
-password = config.get("setup", "password")
+username = config["auth"]["username"]
+password = config["auth"]["password"]
+
+# Also extract the list of 'ALL' courses
+all_courses = list(config["courses"].keys())
+all_courses = map(str.strip, all_courses)
+all_courses = map(str.upper, all_courses)
+all_courses = list(all_courses)
+
+# Select all courses from config if 'ALL' keyword is used
+if 'ALL' in map(str.upper, args.courses):
+    args.courses = all_courses
+
+# List 'ALL' courses
+if args.listcourses:
+    for course in all_courses:
+        print(course)
+    sys.exit(0)
+        
+# Read from a cache of links
+link_cache = set()
+if os.path.exists(".link_cache"):
+    with open(".link_cache") as link_cache_file:
+        for link in link_cache_file.readlines():
+            link_cache.add(link.strip())
 
 with Session() as s:
     # Login to WeLearn with supplied credentials
-    login_page = s.get("https://welearn.iiserkol.ac.in/login/")
-    login_content = bs(login_page.content, "html.parser")
-    token = login_content.find("input", {"name": "logintoken"})["value"]
-    login_data = {"username": username,"password": password, "logintoken": token}
-    s.post("https://welearn.iiserkol.ac.in/login/", login_data)
-    home_page = s.get("https://welearn.iiserkol.ac.in/my/")
-    home_content = bs(home_page.content, "html.parser")
+    login_url = "https://welearn.iiserkol.ac.in/login/token.php"
+    login_response = s.post(login_url, data = {'username' : username, 'password' : password, 'service' : 'moodle_mobile_app'})
+    token = json.loads(login_response.content)['token']
 
-    # Build a list of courses and course page links
-    courses_list = home_content.find("li", {"data-key": "mycourses"})
-    course_links = courses_list.findAll("a", "list-group-item")
-    courses = dict()
-    for course in course_links:
-        course_url = course['href']
-        course_name = course.find("span").contents[0]
-        courses[course_name] = course_url
+    server_url = "https://welearn.iiserkol.ac.in/webservice/rest/server.php"
 
-    # If specified, only display the list of courses and exit
-    if args.listcourses:
-        for name in courses.keys():
-            print(name)
-        sys.exit()
+    # Helper function to retrieve a file/resource from the server
+    def get_resource(res, prefix, indent=0):
+        filename = res['filename']
+        filepath = os.path.join(prefix, filename)
+        fileurl = res['fileurl']
+        
+        # Only download if forced, or not already downloaded
+        if not args.forcedownload and fileurl in link_cache:
+            return
+        
+        # Create the course folder if not already existing
+        if not os.path.exists(course_name):
+            os.makedirs(course_name)
+        
+        # Download the file and write to the folder
+        print(" " * indent + "Downloading " + filepath, end='')
+        response = s.post(fileurl, data = {'token' : token})
+        with open(filepath, "wb") as download:
+            download.write(response.content)
+        print(" ... DONE")
+        
+        # Add the file url to the cache
+        link_cache.add(fileurl)
+    
 
-    # Read from a cache of links
-    link_cache = set()
-    if os.path.exists(".link_cache"):
-        with open(".link_cache") as link_cache_file:
-            for link in link_cache_file.readlines():
-                link_cache.add(link.strip())
-
-    # Select all courses if 'ALL' keyword is used
-    if 'ALL' in map(str.upper, args.courses):
-        args.courses = courses.keys()
-
-    # Loop through all given course IDs
-    for selected_course_name in args.courses:
-        # Ensure that the course name is valid
-        if not selected_course_name in courses.keys():
-            print(selected_course_name + " not in list of available courses!")
-            continue
-
-        # Get the course page and extract all links
-        selected_course_page = s.get(courses[selected_course_name])
-        selected_course_content = bs(selected_course_page.content, "html.parser")
-        links = selected_course_content.findAll('a', "aalink")
-
-        for link in links:
-            # Skip cached links, unless --forcedownload
-            if not args.forcedownload and link['href'] in link_cache:
+    if args.assignments:
+        # Get assignment data from server
+        assignments_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_assignments'})
+        # Parse as json
+        assignments = json.loads(assignments_response.content)
+        
+        # Assignments are grouped by course
+        for course in assignments['courses']:
+            course_name = course['shortname']
+            # Ignore unspecified courses
+            if course_name not in args.courses:
                 continue
-
-            if args.listassignments:
-                if'/mod/assign/view.php' in link['href']:
-                    assigment_page = s.get(link['href'])
-                    assignment_content = bs(assigment_page.content, "html.parser")
-
-                    topic = assignment_content.find("h2").text
-                    intro = assignment_content.find("div", {"id": "intro"})
-                    assignment_links = []
-                    description = intro.find("div", "no-overflow")
-                    if description:
-                        description = description.text
-                    else:
-                        description = ''
-                    for l in intro.findAll("a"):
-                        assignment_links.append(l['href'])
-                    submission_table = assignment_content.find("div", "submissionstatustable").find("table")
-                    submission_status = ''
-                    due_date = ''
-                    time_remaining = ''
-                    for row in submission_table.findAll("tr"):
-                        first, second = row.find("th"), row.find("td")
-                        if first.text == "Submission status":
-                            submission_status = second.text
-                        elif first.text == "Due date":
-                            due_date = second.text
-                        elif first.text == "Time remaining":
-                            time_remaining = second.text
-                    if not args.dueassignments or \
-                            ("Submitted" not in submission_status and \
-                            "overdue" not in time_remaining):
-                        print(f"{selected_course_name} : {topic}")
-                        print(f"    {description}")
-                        print(f"    Due date        : {due_date}")
-                        print(f"    Status          : {submission_status}")
-                        print(f"    Time remaining  : {time_remaining}")
-                        if len(assignment_links) > 0:
-                            print( "    Links : ")
-                            for l in assignment_links:
-                                print("        " + l)
-                        print()
-                continue
-
-            if '/mod/resource/view.php' in link['href']:
-                response = s.get(link['href'])
-                # Extract the file name and put the file in an appropriate directory
-                filename = urllib.parse.unquote(response.url.split("/")[-1])
-                filepath = os.path.join(selected_course_name, filename)
-
-                # Skip embedded resources. Temporary fix
-                if filename.startswith("view.php"):
+            no_assignments = True
+            for assignment in course['assignments']:
+                # Get the assignment name, details, due date, and relative due date
+                name = assignment['name']
+                duedate = datetime.fromtimestamp(int(assignment['duedate']))
+                due_str = duedate.strftime('%a %d %b, %Y, %H:%M:%S')
+                duedelta = duedate - datetime.now()
+                # Calculate whether the due date is in the future
+                due = duedelta.total_seconds() > 0
+                if args.dueassignments and not due:
                     continue
+                no_assignments = False
+                if not no_assignments:
+                    print(course_name)
+                # Show assignment details
+                duedelta_str = f"{abs(duedelta.days)} days, {duedelta.seconds // 3600} hours"
+                detail = bs(assignment['intro'], "html.parser").text
+                print(f"    {name} - {detail}")
+                if due:
+                    print(f"        Due on: {due_str}")
+                    print(f"        Time remaining : {duedelta_str}")
+                else:
+                    print(f"        Due on: {due_str} ({duedelta_str} ago)")
+                for attachment in assignment['introattachments']:
+                    print(f"        Attachment: {course_name}/{attachment['filename']}")
+                    get_resource(attachment, course_name, indent=8)
+                print()
 
-                if not os.path.exists(selected_course_name):
-                    os.makedirs(selected_course_name)
-
-                with open(filepath, "wb") as download:
-                    download.write(response.content)
-
-                print("Downloaded " + filepath)
-                link_cache.add(link['href'])
+    else:
+        # Get a list of all courses along with a list of available resources
+        courses_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
+        resources_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_resource_get_resources_by_courses'})
+        
+        # Parse as json
+        courses = json.loads(courses_response.content)
+        resources = json.loads(resources_response.content)
+       
+        # Create a dictionary of course ids versus course names
+        course_ids = dict()
+        for course in courses['courses']:
+            course_name = course['shortname']
+            if course_name in args.courses:
+                course_ids[course['id']] = course_name
+        
+        # Iterate through all resources, and only fetch ones from the specified course
+        for resource in resources['resources']:
+            if resource['course'] in course_ids:
+                course_name = course_ids[resource['course']]
+                for subresource in resource['contentfiles']:
+                    get_resource(subresource, course_name)
 
     # Update cached links
     with open(".link_cache", "w") as link_cache_file:
