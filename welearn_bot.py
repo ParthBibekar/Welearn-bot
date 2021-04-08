@@ -117,14 +117,33 @@ with Session() as s:
                 duedelta_str = f"{abs(duedelta.days)} days, {duedelta.seconds // 3600} hours"
                 detail = bs(assignment['intro'], "html.parser").text
                 print(f"    {name} - {detail}")
+                for attachment in assignment['introattachments']:
+                    print(f"        Attachment: {course_name}/{attachment['filename']}")
+                    get_resource(attachment, course_name, indent=8)
                 if due:
                     print(f"        Due on: {due_str}")
                     print(f"        Time remaining : {duedelta_str}")
                 else:
                     print(f"        Due on: {due_str} ({duedelta_str} ago)")
-                for attachment in assignment['introattachments']:
-                    print(f"        Attachment: {course_name}/{attachment['filename']}")
-                    get_resource(attachment, course_name, indent=8)
+                
+                # Get submission details
+                submission_response = s.post(server_url, \
+                    data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_submission_status', \
+                            'assignid' : assignment['id']})
+                submission = json.loads(submission_response.content)
+                submission_made = False
+                for plugin in submission['lastattempt']['submission']['plugins']:
+                    if plugin['name'] == "File submissions":
+                        for filearea in plugin['fileareas']:
+                            if filearea['area'] == 'submission_files':
+                                for submitted_file in filearea['files']:
+                                    submission_made = True
+                                    filename = submitted_file['filename']
+                                    submission_date = datetime.fromtimestamp(int(submitted_file['timemodified']))
+                                    submission_date_str = submission_date.strftime('%a %d %b, %Y, %H:%M:%S')
+                                    print(f"        Submission: {filename} ({submission_date_str})")
+                if not submission_made:
+                    print(f"        Submission: NONE")
                 print()
 
     else:
