@@ -10,7 +10,8 @@ pip3 install -r requirements.txt
 ```
 
 ## Configuration
-Create a file in your home folder called `.welearnrc`. Inside, fill in your details in the following format.
+On \*nix systems (linux, macos), create a `~/.welearnrc` file; on windows, create a `welearn.ini`.
+Inside, fill in your details in the following format.
 
 ```
 [auth]
