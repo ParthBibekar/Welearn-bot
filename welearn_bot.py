@@ -13,11 +13,12 @@ import json
 # Get command line options
 parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
 
-parser.add_argument("courses", nargs="+", help="IDs of the courses to download files from. The word ALL selects all configured courses.")
+parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects all configured courses.")
+parser.add_argument("-w", "--whoami", action="store_true", help="display logged in user name and exit")
 parser.add_argument("-l", "--listcourses", action="store_true", help="display configured courses (ALL) and exit")
 parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
-parser.add_argument("-i", "--ignoretypes", nargs="+", help="ignores the specified extensions when downloading, overrides .welearnrc. Use NONE to ignore no types.")
+parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
 
 args = parser.parse_args()
@@ -60,10 +61,7 @@ except:
 
 # Override config with options
 if args.ignoretypes:
-    if "NONE" in map(str.upper, args.ignoretypes):
-        ignore_types = []
-    else:
-        ignore_types = args.ignoretypes
+    ignore_types = args.ignoretypes
 
 # Override ignore with force
 if args.forcedownload:
@@ -87,6 +85,15 @@ with Session() as s:
     token = json.loads(login_response.content)['token']
 
     server_url = "https://welearn.iiserkol.ac.in/webservice/rest/server.php"
+
+    if args.whoami:
+        info_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_webservice_get_site_info'})
+        # Parse as json
+        info = json.loads(info_response.content)
+        print(info['fullname'])
+        sys.exit(0)
+        
 
     # Helper function to retrieve a file/resource from the server
     def get_resource(res, prefix, indent=0):
