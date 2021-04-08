@@ -128,11 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
-# Ignore all html, txt and pdf outputs
-*.html
-*.pdf
-*.txt
-
 # Ignore the cache
-link_cache
+.link_cache
