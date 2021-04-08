@@ -25,8 +25,8 @@ if len(args.courses) == 0 and not args.listcourses:
 configfile = os.path.expanduser("~/.welearnrc")
 config = RawConfigParser()
 config.read(configfile)
-username = config.get("setup_settings", "username")
-password = config.get("setup_settings", "password")
+username = config.get("setup", "username")
+password = config.get("setup", "password")
 
 with Session() as s:
     # Login to WeLearn with supplied credentials

@@ -1,5 +1,5 @@
 # Welearn-bot
-This is a bot which lets you interact with WeLearn from the command line. It can 
+This is a bot which lets you interact with WeLearn from the command line. It can
 - Download all files/resources from multiple courses and organize them in designated folders.
 - List your assignments with details, or just your due assignments.
 
@@ -7,7 +7,13 @@ This is a bot which lets you interact with WeLearn from the command line. It can
 This script runs on python3, and requires the `requests` and `beautifulsoup4` libraries. Run `pip3 install requests bs4` to install them.
 
 ## Usage and configuration
-Create a file in your home folder called `.welearnrc`. Inside, put your username in the first line and your password in the second line.
+Create a file in your home folder called `.welearnrc`. Inside, add the following lines and will the `<>` placeholders with your details.
+
+```
+[setup]
+username = <your-username>
+password = <your-password>
+```
 
 Run `./welearn_bot.py -h` to get the following help message.
 ```
@@ -32,7 +38,7 @@ To get a list of available courses, run
 ```
 ./welearn_bot.py -l
 ```
-To pull all files from the courses AB1101 and XY5505, run 
+To pull all files from the courses AB1101 and XY5505, run
 ```
 ./welearn_bot.py AB1101 XY5505
 ```
