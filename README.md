@@ -3,6 +3,9 @@ This is a bot which lets you interact with WeLearn from the command line. It can
 - Download all files/resources from your courses and organize them in designated folders.
 - Show your assignments, filter due assignments.
 
+### Demo
+[![asciicast](https://asciinema.org/a/AgQTOCZlZmNW37oNeArZYnoBI.svg)](https://asciinema.org/a/AgQTOCZlZmNW37oNeArZYnoBI)
+
 ## Requirements
 This script runs on `python3`. To install all dependencies (`requests` and `bs4`), run
 ```
