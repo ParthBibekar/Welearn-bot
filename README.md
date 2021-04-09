@@ -104,5 +104,5 @@ To get a list of courses specified in your `.welearnrc`, run
 - [x] Do not repeat downloads (cache past links)
 - [x] List assignments
 - [x] Deal with image files and other resources, which are nested within a resource page
+- [x] Deal with files updated over time (check last modified)
 - [ ] Allow finer control over resources to download (time range, filetype)
-- [ ] Deal with files updated over time
