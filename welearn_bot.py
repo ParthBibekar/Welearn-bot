@@ -116,8 +116,8 @@ with Session() as s:
             return
         
         # Create the course folder if not already existing
-        if not os.path.exists(course_name):
-            os.makedirs(course_name)
+        if not os.path.exists(prefix):
+            os.makedirs(prefix)
         
         # Download the file and write to the folder
         print(" " * indent + "Downloading " + filepath, end='')
