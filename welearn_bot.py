@@ -92,8 +92,9 @@ ignore_types = list(ignore_types)
 
 # Read from a cache of links
 link_cache = dict()
-if os.path.exists(".link_cache"):
-    with open(".link_cache") as link_cache_file:
+link_cache_filepath = os.path.join(prefix_path, ".link_cache")
+if os.path.exists(link_cache_filepath):
+    with open(link_cache_filepath) as link_cache_file:
         link_cache = json.load(link_cache_file)
 
 with Session() as s:
@@ -132,7 +133,7 @@ with Session() as s:
 
         # Ignore files with specified extensions
         if extension in ignore_types:
-            print(" " * indent + "Ignoring " + filename, "in", course)
+            print(" " * indent + "Ignoring " + course, ":", filename)
             return
 
         # Create the course folder if not already existing
@@ -236,5 +237,5 @@ with Session() as s:
                     get_resource(subresource, prefix_path, course_name)
 
     # Update cached links
-    with open(".link_cache", "w") as link_cache_file:
+    with open(link_cache_filepath, "w") as link_cache_file:
         json.dump(link_cache, link_cache_file)
