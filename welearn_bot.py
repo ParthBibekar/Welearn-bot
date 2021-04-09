@@ -72,11 +72,10 @@ ignore_types = map(str.upper, ignore_types)
 ignore_types = list(ignore_types)
 
 # Read from a cache of links
-link_cache = set()
+link_cache = dict()
 if os.path.exists(".link_cache"):
     with open(".link_cache") as link_cache_file:
-        for link in link_cache_file.readlines():
-            link_cache.add(link.strip())
+        link_cache = json.load(link_cache_file)
 
 with Session() as s:
     # Login to WeLearn with supplied credentials
@@ -102,10 +101,14 @@ with Session() as s:
         fileurl = res['fileurl']
         _, extension = os.path.splitext(filename)
         extension = str.upper(extension[1:])
+        timemodified = int(res['timemodified'])
         
         # Only download if forced, or not already downloaded
         if not args.forcedownload and fileurl in link_cache:
-            return
+            cache_time = int(link_cache[fileurl])
+            # Check where the latest version of the file is in cache
+            if timemodified == cache_time:
+                return
         
         # Ignore files with specified extensions
         if extension in ignore_types:
@@ -124,7 +127,7 @@ with Session() as s:
         print(" ... DONE")
         
         # Add the file url to the cache
-        link_cache.add(fileurl)
+        link_cache[fileurl] = timemodified
     
 
     if args.assignments:
@@ -214,5 +217,4 @@ with Session() as s:
 
     # Update cached links
     with open(".link_cache", "w") as link_cache_file:
-        for link in list(link_cache):
-            link_cache_file.write(link + "\n")
+        json.dump(link_cache, link_cache_file)
