@@ -5,9 +5,6 @@ This is a bot which lets you interact with WeLearn from the command line. It can
 
 Using the [Moodle Web Services API](https://docs.moodle.org/dev/Web_services) makes `welearn_bot.py` fast and robust.
 
-### Demo
-[![asciicast](https://asciinema.org/a/AgQTOCZlZmNW37oNeArZYnoBI.svg)](https://asciinema.org/a/AgQTOCZlZmNW37oNeArZYnoBI)
-
 ## Requirements
 This script runs on `python3`. To install all dependencies (`requests` and `bs4`), run
 ```
@@ -49,20 +46,23 @@ This is overriden by the `--pathprefix` command line option.
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-iusage: welearn_bot [-h] [-w] [-l] [-a] [-d] [-u] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] [courses ...]
+usage: welearn_bot [-h] [-d] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] action [courses ...]
 
-A bot which can batch download files from WeLearn.
+A command line client for interacting with WeLearn.
 
 positional arguments:
-  courses               IDs of the courses to download files from. The word ALL selects all configured courses.
+  action                choose from
+                            files       - downloads files/resources
+                            assignments - lists assignments, downloads attachments
+                            urls        - lists urls
+                            courses     - lists enrolled courses
+                            whoami      - shows the user's name and exits
+                        Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are suppoerted.
+  courses               IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini
 
 optional arguments:
   -h, --help            show this help message and exit
-  -w, --whoami          display logged in user name and exit
-  -l, --listcourses     display configured courses (ALL) and exit
-  -a, --assignments     show all assignments in given courses, download attachments and exit
-  -d, --dueassignments  show only due assignments, if -a was selected
-  -u, --urls            show all urls in given courses and exit
+  -d, --dueassignments  show only due assignments with the 'assignments' action
   -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
                         ignores the specified extensions when downloading, overrides .welearnrc
   -f, --forcedownload   force download files even if already downloaded/ignored
@@ -74,47 +74,53 @@ optional arguments:
 ### Testing your setup
 If your `.welearnrc` or `welearn.ini` file is set up correctly, the following command should simply display your name.
 ```
-./welearn_bot.py --whoami
+./welearn_bot.py whoami
 ```
-To get a list of courses specified in your configuration file, run
+To get a list of courses you are enrolled in, run
 ```
-./welearn_bot.py -l
+./welearn_bot.py courses
 ```
 ### Basic commands
 To pull all files from the courses MA1101 and CH3303, run
 ```
-./welearn_bot.py MA1101 CH3303
+./welearn_bot.py files MA1101 CH3303
 ```
-To show all assignments and download their attachments from the course MA1101, run
+You can use the shorthand `f` for `files`, so the following is an equivalent command.
 ```
-./welearn_bot.py -a MA1101
+./welearn_bot.py f MA1101 CH3303
+```
+To show assignments and download their attachments from the course MA1101, run
+```
+./welearn_bot.py assignments MA1101
 ```
 To list due assignments (due date in the future) from all courses, run
 ```
-./welearn_bot.py -ad ALL
+./welearn_bot.py -d assignments ALL
 ```
+Make sure that the `-d` flag comes first!
+
 To list all urls from the CH3303 course, run
 ```
-./welearn_bot.py -u CH3303
+./welearn_bot.py urls CH3303
 ```
 ### Ignoring filetypes
 To download all resources from the course CH3303, ignoring pdf files, run
 ```
-./welearn_bot.py -i pdf -- CH3303
+./welearn_bot.py -i pdf -- files CH3303
 ```
 Note the use of `--` which is essential for separating the `IGNORETYPES` from the `courses`. The following format may be preferred.
 ```
-./welearn_bot.py CH3303 -i pdf
+./welearn_bot.py files CH3303 -i pdf
 ```
 To override the `.welearnrc` ignore settings and allow all extensions, but still respect past downloads, run 
 ```
-./welearn_bot.py -i -- CH3303
+./welearn_bot.py -i -- files CH3303
 ```
 ### Force downloads and pathprefix
 To force download all resources from the course PH2202, even if already downloaded and present or set to be ignored, 
 and put all the course directories in the `~/notes` folder, run
 ```
-./welearn_bot.py -fp ~/notes PH2202
+./welearn_bot.py files PH2202 -fp ~/notes 
 ```
 
 
