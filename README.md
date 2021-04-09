@@ -5,6 +5,9 @@ This is a bot which lets you interact with WeLearn from the command line. It can
 
 Using the [Moodle Web Services API](https://docs.moodle.org/dev/Web_services) makes `welearn_bot.py` fast and robust.
 
+### Demo
+[![asciicast](https://asciinema.org/a/LuVrCehQKXCBeCeXNRUZqgLdm.svg)](https://asciinema.org/a/LuVrCehQKXCBeCeXNRUZqgLdm)
+
 ## Requirements
 This script runs on `python3`. To install all dependencies (`requests` and `bs4`), run
 ```
