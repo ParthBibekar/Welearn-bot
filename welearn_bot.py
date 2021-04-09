@@ -19,6 +19,7 @@ parser.add_argument("-l", "--listcourses", action="store_true", help="display co
 parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
+parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
 
 args = parser.parse_args()
@@ -63,15 +64,23 @@ except KeyError:
 if args.ignoretypes:
     ignore_types = args.ignoretypes
 
+# Read pathprefix from config
 try:
     prefix_path = os.path.expanduser(config["files"]["pathprefix"])
+    prefix_path = os.path.abspath(prefix_path)
     if not os.path.isdir(prefix_path):
         print(prefix_path, "does not exist!\nFalling back to defaults")
         raise NotADirectoryError
 except KeyError:
     prefix_path = ""
 
-print(prefix_path)
+# Override pathprefix config if -p flag is used
+if args.pathprefix:
+    prefix_path = os.path.expanduser(args.pathprefix[0])
+    prefix_path = os.path.abspath(prefix_path)
+    if not os.path.isdir(prefix_path):
+        print(prefix_path, "does not exist!\nFalling back to defaults")
+        raise NotADirectoryError
 
 # Override ignore with force
 if args.forcedownload:
