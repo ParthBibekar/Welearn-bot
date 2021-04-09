@@ -19,11 +19,16 @@ parser.add_argument("-w", "--whoami", action="store_true", help="display logged 
 parser.add_argument("-l", "--listcourses", action="store_true", help="display configured courses (ALL) and exit")
 parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
+parser.add_argument("-u", "--urls", action="store_true", help="show all urls in given courses and exit")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
 parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
 
 args = parser.parse_args()
+
+if sum([args.listcourses, args.assignments, args.urls]) > 1:
+    print("Use at most one of --listcourses, --assignments, --urls!")
+    sys.exit(errno.EPERM)
 
 # Read the .welearnrc file from the home directory, and extract username and password
 if platform == "linux" or platform == "linux2":
@@ -211,24 +216,60 @@ with Session() as s:
                 if not submission_made:
                     print(f"        Submission: NONE")
                 print()
+        sys.exit(0)
+        
+    # Get a list of all courses
+    courses_response = s.post(server_url, \
+        data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
+    # Parse as json
+    courses = json.loads(courses_response.content)
+        
+    # Create a dictionary of course ids versus course names
+    course_ids = dict()
+    for course in courses['courses']:
+        course_name = course['shortname']
+        if course_name in args.courses:
+            course_ids[course['id']] = course_name
+
+    if args.urls:
+        # Get a list of available urls
+        urls_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_url_get_urls_by_courses'})
+        # Parse as json
+        urls = json.loads(urls_response.content)
+        
+        # Iterate through all urls, and build a dictionary
+        url_list = dict()
+        for url in urls['urls']:
+            if url['course'] in course_ids:
+                course_name = course_ids[url['course']]
+                if not course_name in url_list:
+                    url_list[course_name] = []
+                url_list[course_name].append(url)
+
+        # Display all urls
+        for course_name in args.courses:
+            if not course_name in url_list:
+                continue
+            no_url = True
+            for url in url_list[course_name]:
+                if no_url:
+                    print(course_name)
+                no_url = False
+                url_name = url["name"]
+                url_detail = bs(url["intro"], "html.parser").text
+                url_link = url["externalurl"]
+                print(f"    {url_name} - {url_detail}")
+                print(f"        Link: {url_link}")
+                print()
+            print()
 
     else:
-        # Get a list of all courses along with a list of available resources
-        courses_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
+        # Get a list of available resources
         resources_response = s.post(server_url, \
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_resource_get_resources_by_courses'})
-
         # Parse as json
-        courses = json.loads(courses_response.content)
         resources = json.loads(resources_response.content)
-
-        # Create a dictionary of course ids versus course names
-        course_ids = dict()
-        for course in courses['courses']:
-            course_name = course['shortname']
-            if course_name in args.courses:
-                course_ids[course['id']] = course_name
 
         # Iterate through all resources, and only fetch ones from the specified course
         for resource in resources['resources']:
