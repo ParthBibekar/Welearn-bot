@@ -56,12 +56,22 @@ ignore_types = []
 try:
     ignores = config["files"]["ignore"]
     ignore_types = ignores.split(",")
-except:
+except KeyError:
     ignore_types = []
 
 # Override config with options
 if args.ignoretypes:
     ignore_types = args.ignoretypes
+
+try:
+    prefix_path = os.path.expanduser(config["files"]["pathprefix"])
+    if not os.path.isdir(prefix_path):
+        print(prefix_path, "does not exist!\nFalling back to defaults")
+        raise NotADirectoryError
+except KeyError:
+    prefix_path = ""
+
+print(prefix_path)
 
 # Override ignore with force
 if args.forcedownload:
@@ -92,43 +102,44 @@ with Session() as s:
         info = json.loads(info_response.content)
         print(info['fullname'])
         sys.exit(0)
-        
+
 
     # Helper function to retrieve a file/resource from the server
-    def get_resource(res, prefix, indent=0):
+    def get_resource(res, prefix, course, indent=0):
         filename = res['filename']
-        filepath = os.path.join(prefix, filename)
+        course_dir = os.path.join(prefix, course)
+        filepath = os.path.join(course_dir, filename)
         fileurl = res['fileurl']
         _, extension = os.path.splitext(filename)
         extension = str.upper(extension[1:])
         timemodified = int(res['timemodified'])
-        
+
         # Only download if forced, or not already downloaded
         if not args.forcedownload and fileurl in link_cache:
             cache_time = int(link_cache[fileurl])
             # Check where the latest version of the file is in cache
             if timemodified == cache_time:
                 return
-        
+
         # Ignore files with specified extensions
         if extension in ignore_types:
-            print(" " * indent + "Ignoring " + filepath)
+            print(" " * indent + "Ignoring " + filename, "in", course)
             return
-        
+
         # Create the course folder if not already existing
-        if not os.path.exists(prefix):
-            os.makedirs(prefix)
-        
+        if not os.path.exists(course_dir):
+            os.makedirs(course_dir)
+
         # Download the file and write to the folder
-        print(" " * indent + "Downloading " + filepath, end='')
+        print(" " * indent + "Downloading " + course, ":", filename, end='')
         response = s.post(fileurl, data = {'token' : token})
         with open(filepath, "wb") as download:
             download.write(response.content)
         print(" ... DONE")
-        
+
         # Add the file url to the cache
         link_cache[fileurl] = timemodified
-    
+
 
     if args.assignments:
         # Get assignment data from server
@@ -136,7 +147,7 @@ with Session() as s:
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_assignments'})
         # Parse as json
         assignments = json.loads(assignments_response.content)
-        
+
         # Assignments are grouped by course
         for course in assignments['courses']:
             course_name = course['shortname']
@@ -163,13 +174,13 @@ with Session() as s:
                 print(f"    {name} - {detail}")
                 for attachment in assignment['introattachments']:
                     print(f"        Attachment: {course_name}/{attachment['filename']}")
-                    get_resource(attachment, course_name, indent=8)
+                    get_resource(attachment, prefix_path, course_name, indent=8)
                 if due:
                     print(f"        Due on: {due_str}")
                     print(f"        Time remaining : {duedelta_str}")
                 else:
                     print(f"        Due on: {due_str} ({duedelta_str} ago)")
-                
+
                 # Get submission details
                 submission_response = s.post(server_url, \
                     data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_submission_status', \
@@ -196,24 +207,24 @@ with Session() as s:
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
         resources_response = s.post(server_url, \
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_resource_get_resources_by_courses'})
-        
+
         # Parse as json
         courses = json.loads(courses_response.content)
         resources = json.loads(resources_response.content)
-       
+
         # Create a dictionary of course ids versus course names
         course_ids = dict()
         for course in courses['courses']:
             course_name = course['shortname']
             if course_name in args.courses:
                 course_ids[course['id']] = course_name
-        
+
         # Iterate through all resources, and only fetch ones from the specified course
         for resource in resources['resources']:
             if resource['course'] in course_ids:
                 course_name = course_ids[resource['course']]
                 for subresource in resource['contentfiles']:
-                    get_resource(subresource, course_name)
+                    get_resource(subresource, prefix_path, course_name)
 
     # Update cached links
     with open(".link_cache", "w") as link_cache_file:
