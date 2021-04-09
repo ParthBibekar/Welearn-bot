@@ -49,7 +49,7 @@ This is overriden by the `--pathprefix` command line option.
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [-w] [-l] [-a] [-d] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] [courses ...]
+iusage: welearn_bot [-h] [-w] [-l] [-a] [-d] [-u] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] [courses ...]
 
 A bot which can batch download files from WeLearn.
 
@@ -62,6 +62,7 @@ optional arguments:
   -l, --listcourses     display configured courses (ALL) and exit
   -a, --assignments     show all assignments in given courses, download attachments and exit
   -d, --dueassignments  show only due assignments, if -a was selected
+  -u, --urls            show all urls in given courses and exit
   -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
                         ignores the specified extensions when downloading, overrides .welearnrc
   -f, --forcedownload   force download files even if already downloaded/ignored
@@ -91,6 +92,10 @@ To show all assignments and download their attachments from the course MA1101, r
 To list due assignments (due date in the future) from all courses, run
 ```
 ./welearn_bot.py -ad ALL
+```
+To list all urls from the CH3303 course, run
+```
+./welearn_bot.py -u CH3303
 ```
 ### Ignoring filetypes
 To download all resources from the course CH3303, ignoring pdf files, run
