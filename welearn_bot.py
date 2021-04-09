@@ -12,22 +12,41 @@ import argparse
 import json
 
 # Get command line options
-parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
+parser = argparse.ArgumentParser(description="A command line client for interacting with WeLearn.", formatter_class=argparse.RawTextHelpFormatter)
 
-parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects all configured courses.")
-parser.add_argument("-w", "--whoami", action="store_true", help="display logged in user name and exit")
-parser.add_argument("-l", "--listcourses", action="store_true", help="display configured courses (ALL) and exit")
-parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
-parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
-parser.add_argument("-u", "--urls", action="store_true", help="show all urls in given courses and exit")
+parser.add_argument("action", nargs=1, help="choose from\n\
+    files       - downloads files/resources\n\
+    assignments - lists assignments, downloads attachments\n\
+    urls        - lists urls\n\
+    courses     - lists enrolled courses\n\
+    whoami      - shows the user's name and exits\n\
+Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are suppoerted.")
+parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini")
+parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments with the 'assignments' action")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
 parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
 
 args = parser.parse_args()
 
-if sum([args.listcourses, args.assignments, args.urls]) > 1:
-    print("Use at most one of --listcourses, --assignments, --urls!")
+# Get the mode
+action = ""
+if "files".startswith(args.action[0]):
+    action = "files"
+elif "assignments".startswith(args.action[0]):
+    action = "assignments"
+elif "urls".startswith(args.action[0]):
+    action = "urls"
+elif "courses".startswith(args.action[0]):
+    action = "courses"
+elif "whoami".startswith(args.action[0]):
+    action = "whoami"
+else:
+    print("Invalid action! Use the -h flag for usage.")
+    sys.exit(errno.EPERM)
+
+if args.dueassignments and action != "assignments":
+    print("Can only use --dueassignments with 'assignments' action! Use the -h flag for usage.")
     sys.exit(errno.EPERM)
 
 # Read the .welearnrc file from the home directory, and extract username and password
@@ -51,12 +70,6 @@ all_courses = list(all_courses)
 # Select all courses from config if 'ALL' keyword is used
 if 'ALL' in map(str.upper, args.courses):
     args.courses = all_courses
-
-# List 'ALL' courses
-if args.listcourses:
-    for course in all_courses:
-        print(course)
-    sys.exit(0)
 
 # Read ignore types from config
 ignore_types = []
@@ -96,12 +109,72 @@ if args.pathprefix:
         print(prefix_path, "does not exist!")
         sys.exit(errno.ENOTDIR)
 
-# Read from a cache of links
-link_cache = dict()
+
 link_cache_filepath = os.path.join(prefix_path, ".link_cache")
-if os.path.exists(link_cache_filepath):
-    with open(link_cache_filepath) as link_cache_file:
-        link_cache = json.load(link_cache_file)
+
+# Read from a cache of links
+def read_link_cache():
+    link_cache = dict()
+    if os.path.exists(link_cache_filepath):
+        with open(link_cache_filepath) as link_cache_file:
+            link_cache = json.load(link_cache_file)
+    return link_cache
+
+# Update cached links
+def write_link_cache(link_cache):
+    with open(link_cache_filepath, "w") as link_cache_file:
+        json.dump(link_cache, link_cache_file)
+
+# Helper function to retrieve a file/resource from the server
+def get_resource(res, prefix, course, cache, indent=0):
+    filename = res['filename']
+    course_dir = os.path.join(prefix, course)
+    filepath = os.path.join(course_dir, filename)
+    fileurl = res['fileurl']
+    _, extension = os.path.splitext(filename)
+    extension = str.upper(extension[1:])
+    timemodified = int(res['timemodified'])
+
+    # Only download if forced, or not already downloaded
+    if not args.forcedownload and fileurl in link_cache:
+        cache_time = int(link_cache[fileurl])
+        # Check where the latest version of the file is in cache
+        if timemodified == cache_time:
+            return
+
+    # Ignore files with specified extensions
+    if extension in ignore_types:
+        print(" " * indent + "Ignoring " + course, ":", filename)
+        return
+
+    # Create the course folder if not already existing
+    if not os.path.exists(course_dir):
+        os.makedirs(course_dir)
+
+    # Download the file and write to the folder
+    print(" " * indent + "Downloading " + course, ":", filename, end='')
+    response = s.post(fileurl, data = {'token' : token})
+    with open(filepath, "wb") as download:
+        download.write(response.content)
+    print(" ... DONE")
+
+    # Add the file url to the cache
+    cache[fileurl] = timemodified
+
+def get_courses_by_id():
+    # Get a list of all courses
+    courses_response = s.post(server_url, \
+        data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
+    # Parse as json
+    courses = json.loads(courses_response.content)
+        
+    # Create a dictionary of course ids versus course names
+    course_ids = dict()
+    for course in courses['courses']:
+        course_name = course['shortname']
+        if course_name in args.courses:
+            course_ids[course['id']] = course_name
+    return course_ids
 
 with Session() as s:
     # Login to WeLearn with supplied credentials
@@ -111,7 +184,8 @@ with Session() as s:
 
     server_url = "https://welearn.iiserkol.ac.in/webservice/rest/server.php"
 
-    if args.whoami:
+    if action == "whoami":
+        # Get core user information
         info_response = s.post(server_url, \
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_webservice_get_site_info'})
         # Parse as json
@@ -119,45 +193,29 @@ with Session() as s:
         print(info['fullname'])
         sys.exit(0)
 
+    elif action == "courses":
+        # Get core user information
+        info_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_webservice_get_site_info'})
+        # Parse as json
+        info = json.loads(info_response.content)
+        userid = info["userid"]
+        
+        # Get enrolled courses information
+        courses_response = s.post(server_url, \
+            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_enrol_get_users_courses', 'userid' : userid})
+        # Parse as json
+        courses = json.loads(courses_response.content)
+        for course in courses:
+            course_name = course["fullname"]
+            star = " "
+            if course["isfavourite"]:
+                star = "*"
+            print(f" {star} {course_name}")
+        sys.exit(0)
 
-    # Helper function to retrieve a file/resource from the server
-    def get_resource(res, prefix, course, indent=0):
-        filename = res['filename']
-        course_dir = os.path.join(prefix, course)
-        filepath = os.path.join(course_dir, filename)
-        fileurl = res['fileurl']
-        _, extension = os.path.splitext(filename)
-        extension = str.upper(extension[1:])
-        timemodified = int(res['timemodified'])
-
-        # Only download if forced, or not already downloaded
-        if not args.forcedownload and fileurl in link_cache:
-            cache_time = int(link_cache[fileurl])
-            # Check where the latest version of the file is in cache
-            if timemodified == cache_time:
-                return
-
-        # Ignore files with specified extensions
-        if extension in ignore_types:
-            print(" " * indent + "Ignoring " + course, ":", filename)
-            return
-
-        # Create the course folder if not already existing
-        if not os.path.exists(course_dir):
-            os.makedirs(course_dir)
-
-        # Download the file and write to the folder
-        print(" " * indent + "Downloading " + course, ":", filename, end='')
-        response = s.post(fileurl, data = {'token' : token})
-        with open(filepath, "wb") as download:
-            download.write(response.content)
-        print(" ... DONE")
-
-        # Add the file url to the cache
-        link_cache[fileurl] = timemodified
-
-
-    if args.assignments:
+    elif action == "assignments":
+        link_cache = read_link_cache()
         # Get assignment data from server
         assignments_response = s.post(server_url, \
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_assignments'})
@@ -190,7 +248,7 @@ with Session() as s:
                 print(f"    {name} - {detail}")
                 for attachment in assignment['introattachments']:
                     print(f"        Attachment: {course_name}/{attachment['filename']}")
-                    get_resource(attachment, prefix_path, course_name, indent=8)
+                    get_resource(attachment, prefix_path, course_name, link_cache, indent=8)
                 if due:
                     print(f"        Due on: {due_str}")
                     print(f"        Time remaining : {duedelta_str}")
@@ -216,22 +274,12 @@ with Session() as s:
                 if not submission_made:
                     print(f"        Submission: NONE")
                 print()
+        write_link_cache(link_cache)
         sys.exit(0)
-        
-    # Get a list of all courses
-    courses_response = s.post(server_url, \
-        data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
-    # Parse as json
-    courses = json.loads(courses_response.content)
-        
-    # Create a dictionary of course ids versus course names
-    course_ids = dict()
-    for course in courses['courses']:
-        course_name = course['shortname']
-        if course_name in args.courses:
-            course_ids[course['id']] = course_name
 
-    if args.urls:
+    elif action == "urls":
+        course_ids = get_courses_by_id()
+
         # Get a list of available urls
         urls_response = s.post(server_url, \
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_url_get_urls_by_courses'})
@@ -263,8 +311,12 @@ with Session() as s:
                 print(f"        Link: {url_link}")
                 print()
             print()
+        sys.exit(0)
 
-    else:
+    elif action == "files":
+        link_cache = read_link_cache()
+        course_ids = get_courses_by_id()
+
         # Get a list of available resources
         resources_response = s.post(server_url, \
             data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_resource_get_resources_by_courses'})
@@ -276,8 +328,7 @@ with Session() as s:
             if resource['course'] in course_ids:
                 course_name = course_ids[resource['course']]
                 for subresource in resource['contentfiles']:
-                    get_resource(subresource, prefix_path, course_name)
+                    get_resource(subresource, prefix_path, course_name, link_cache)
+        
+        write_link_cache(link_cache)
 
-    # Update cached links
-    with open(link_cache_filepath, "w") as link_cache_file:
-        json.dump(link_cache, link_cache_file)
