@@ -57,7 +57,7 @@ positional arguments:
                             urls        - lists urls
                             courses     - lists enrolled courses
                             whoami      - shows the user's name and exits
-                        Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are suppoerted.
+                        Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.
   courses               IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini
 
 optional arguments:

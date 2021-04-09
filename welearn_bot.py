@@ -20,7 +20,7 @@ parser.add_argument("action", nargs=1, help="choose from\n\
     urls        - lists urls\n\
     courses     - lists enrolled courses\n\
     whoami      - shows the user's name and exits\n\
-Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are suppoerted.")
+Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
 parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments with the 'assignments' action")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
