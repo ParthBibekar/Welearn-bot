@@ -7,6 +7,7 @@ from datetime import datetime
 from datetime import timedelta
 from sys import platform
 import os, sys
+import errno
 import argparse
 import json
 
@@ -64,13 +65,21 @@ except KeyError:
 if args.ignoretypes:
     ignore_types = args.ignoretypes
 
+# Override ignore with force
+if args.forcedownload:
+    ignore_types = []
+
+ignore_types = map(str.strip, ignore_types)
+ignore_types = map(str.upper, ignore_types)
+ignore_types = list(ignore_types)
+
 # Read pathprefix from config
 try:
     prefix_path = os.path.expanduser(config["files"]["pathprefix"])
     prefix_path = os.path.abspath(prefix_path)
     if not os.path.isdir(prefix_path):
-        print(prefix_path, "does not exist!\nFalling back to defaults")
-        raise NotADirectoryError
+        print(prefix_path, "does not exist!")
+        sys.exit(errno.ENOTDIR)
 except KeyError:
     prefix_path = ""
 
@@ -79,16 +88,8 @@ if args.pathprefix:
     prefix_path = os.path.expanduser(args.pathprefix[0])
     prefix_path = os.path.abspath(prefix_path)
     if not os.path.isdir(prefix_path):
-        print(prefix_path, "does not exist!\nFalling back to defaults")
-        raise NotADirectoryError
-
-# Override ignore with force
-if args.forcedownload:
-    ignore_types = []
-
-ignore_types = map(str.strip, ignore_types)
-ignore_types = map(str.upper, ignore_types)
-ignore_types = list(ignore_types)
+        print(prefix_path, "does not exist!")
+        sys.exit(errno.ENOTDIR)
 
 # Read from a cache of links
 link_cache = dict()
