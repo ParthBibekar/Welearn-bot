@@ -29,7 +29,7 @@ if platform == "linux" or platform == "linux2":
 elif platform == "darwin":
     configfile = os.path.expanduser("~/.welearnrc")
 elif platform == "win32":
-    configfile = os.path.expanduser("welearnrc.ini")
+    configfile = os.path.expanduser("~/welearn.ini")
 config = RawConfigParser(allow_no_value=True)
 config.read(configfile)
 username = config["auth"]["username"]
