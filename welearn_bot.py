@@ -19,8 +19,8 @@ parser.add_argument("-l", "--listcourses", action="store_true", help="display co
 parser.add_argument("-a", "--assignments", action="store_true", help="show all assignments in given courses, download attachments and exit")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments, if -a was selected")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
-parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
+parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
 
 args = parser.parse_args()
 

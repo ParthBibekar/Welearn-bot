@@ -29,8 +29,8 @@ LS4404
 ES5505
 
 [files]
-ignore=mp4,mkv
-pathprefix = ~/Notes
+ignore = mp4,mkv
+pathprefix = ~/welearn
 ```
 The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
 This way, you can choose to omit redundant courses in this section.
@@ -40,10 +40,13 @@ All files with extensions listed in the `ignore` option will be not be downloade
 This is useful for ignoring typically large files such as video files.
 This setting is overridden by the `--ignoretypes` flag, which in turn is overridden by the `--forcedownload` flag
 
+The `pathprefix` is used to specify a common path for storing all your WeLearn course directories, which in turn store
+your resources and assignment files.
+
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot.py [-h] [-w] [-l] [-a] [-d] [-i [IGNORETYPES [IGNORETYPES ...]]] [-p PATHPREFIX] [-f] [courses [courses ...]]
+usage: welearn_bot [-h] [-w] [-l] [-a] [-d] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] [courses ...]
 
 A bot which can batch download files from WeLearn.
 
@@ -56,11 +59,11 @@ optional arguments:
   -l, --listcourses     display configured courses (ALL) and exit
   -a, --assignments     show all assignments in given courses, download attachments and exit
   -d, --dueassignments  show only due assignments, if -a was selected
-  -i [IGNORETYPES [IGNORETYPES ...]], --ignoretypes [IGNORETYPES [IGNORETYPES ...]]
+  -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
                         ignores the specified extensions when downloading, overrides .welearnrc
+  -f, --forcedownload   force download files even if already downloaded/ignored
   -p PATHPREFIX, --pathprefix PATHPREFIX
                         save the downloads to a custom path, overrides .welearnrc
-  -f, --forcedownload   force download files even if already downloaded/ignored
 ```
 
 ### Examples
@@ -92,9 +95,10 @@ To override the `.welearnrc` ignore settings and allow all extensions, but still
 ```
 ./welearn_bot.py -i -- CH3303
 ```
-To force download all resources from the course PH2202, even if already downloaded and present or set to be ignored, run
+To force download all resources from the course PH2202, even if already downloaded and present or set to be ignored, 
+and put all the course directories in the `~/notes` folder, run
 ```
-./welearn_bot.py -f PH2202
+./welearn_bot.py -fp ~/notes PH2202
 ```
 To get a list of courses specified in your `.welearnrc`, run
 ```
