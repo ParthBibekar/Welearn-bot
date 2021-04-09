@@ -3,6 +3,8 @@ This is a bot which lets you interact with WeLearn from the command line. It can
 - Download all files/resources from your courses and organize them in designated folders.
 - Show your assignments, filter due assignments.
 
+Using the [Moodle Web Services API](https://docs.moodle.org/dev/Web_services) makes `welearn_bot.py` fast and robust.
+
 ### Demo
 [![asciicast](https://asciinema.org/a/AgQTOCZlZmNW37oNeArZYnoBI.svg)](https://asciinema.org/a/AgQTOCZlZmNW37oNeArZYnoBI)
 
@@ -13,7 +15,7 @@ pip3 install -r requirements.txt
 ```
 
 ## Configuration
-On \*nix systems (linux, macos), create a `~/.welearnrc` file; on windows, create a `welearn.ini` in C:/Users/USERNAME/ Folder.
+On \*nix systems (linux, macos), create a `~/.welearnrc` file; on windows, create a `welearn.ini` in your `C:/Users/USERNAME/` folder.
 Inside, fill in your details in the following format.
 
 ```
@@ -38,10 +40,11 @@ This way, you can choose to omit redundant courses in this section.
 The `[files]` section lets you specify settings about the organization of your files.
 All files with extensions listed in the `ignore` option will be not be downloaded.
 This is useful for ignoring typically large files such as video files.
-This setting is overridden by the `--ignoretypes` flag, which in turn is overridden by the `--forcedownload` flag
+This setting is overridden by the `--ignoretypes` command line option, which in turn is overridden by the `--forcedownload` flag
 
 The `pathprefix` is used to specify a common path for storing all your WeLearn course directories, which in turn store
 your resources and assignment files.
+This is overriden by the `--pathprefix` command line option.
 
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
@@ -66,11 +69,17 @@ optional arguments:
                         save the downloads to a custom path, overrides .welearnrc
 ```
 
-### Examples
+## Examples
+### Testing your setup
 If your `.welearnrc` or `welearn.ini` file is set up correctly, the following command should simply display your name.
 ```
 ./welearn_bot.py --whoami
 ```
+To get a list of courses specified in your configuration file, run
+```
+./welearn_bot.py -l
+```
+### Basic commands
 To pull all files from the courses MA1101 and CH3303, run
 ```
 ./welearn_bot.py MA1101 CH3303
@@ -83,6 +92,7 @@ To list due assignments (due date in the future) from all courses, run
 ```
 ./welearn_bot.py -ad ALL
 ```
+### Ignoring filetypes
 To download all resources from the course CH3303, ignoring pdf files, run
 ```
 ./welearn_bot.py -i pdf -- CH3303
@@ -95,15 +105,13 @@ To override the `.welearnrc` ignore settings and allow all extensions, but still
 ```
 ./welearn_bot.py -i -- CH3303
 ```
+### Force downloads and pathprefix
 To force download all resources from the course PH2202, even if already downloaded and present or set to be ignored, 
 and put all the course directories in the `~/notes` folder, run
 ```
 ./welearn_bot.py -fp ~/notes PH2202
 ```
-To get a list of courses specified in your `.welearnrc`, run
-```
-./welearn_bot.py -l
-```
+
 
 ## TODO
 - [x] Download files in separate directories
