@@ -30,6 +30,7 @@ ES5505
 
 [files]
 ignore=mp4,mkv
+pathprefix = ~/Notes
 ```
 The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
 This way, you can choose to omit redundant courses in this section.
@@ -42,7 +43,7 @@ This setting is overridden by the `--ignoretypes` flag, which in turn is overrid
 ## Usage
 Run `./welearn_bot.py -h` to get the following help message.
 ```
-usage: welearn_bot.py [-h] [-w] [-l] [-a] [-d] [-i [IGNORETYPES ...]] [-f] [courses ...]
+usage: welearn_bot.py [-h] [-w] [-l] [-a] [-d] [-i [IGNORETYPES [IGNORETYPES ...]]] [-p PATHPREFIX] [-f] [courses [courses ...]]
 
 A bot which can batch download files from WeLearn.
 
@@ -55,8 +56,10 @@ optional arguments:
   -l, --listcourses     display configured courses (ALL) and exit
   -a, --assignments     show all assignments in given courses, download attachments and exit
   -d, --dueassignments  show only due assignments, if -a was selected
-  -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
+  -i [IGNORETYPES [IGNORETYPES ...]], --ignoretypes [IGNORETYPES [IGNORETYPES ...]]
                         ignores the specified extensions when downloading, overrides .welearnrc
+  -p PATHPREFIX, --pathprefix PATHPREFIX
+                        save the downloads to a custom path, overrides .welearnrc
   -f, --forcedownload   force download files even if already downloaded/ignored
 ```
 
