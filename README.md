@@ -144,6 +144,7 @@ welearn_bot files PH2202 -fp ~/notes
 - [x] Deal with image files and other resources, which are nested within a resource page
 - [x] Deal with files updated over time (check last modified)
 - [ ] Allow finer control over resources to download (time range, filetype)
+- [ ] Add events to Google calendar.
 
 # Google API
 
