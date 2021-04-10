@@ -194,7 +194,11 @@ with Session() as s:
     # Login to WeLearn with supplied credentials
     login_url = "https://welearn.iiserkol.ac.in/login/token.php"
     login_response = s.post(login_url, data = {'username' : username, 'password' : password, 'service' : 'moodle_mobile_app'})
-    token = json.loads(login_response.content)['token']
+    try:
+        token = json.loads(login_response.content)['token']
+    except KeyError:
+        print("Invalid credentials!")
+        sys.exit(errno.EACCES)
 
     server_url = "https://welearn.iiserkol.ac.in/webservice/rest/server.php"
 
