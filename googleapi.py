@@ -153,7 +153,7 @@ with Session() as s:
                         event['end']['dateTime'] = end_str
                         updated_event = service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
                         event_cache[assignment_id] = updated_event['id']
-                        print("Updated event : {} \n \tTo DateTime : {}".format(event['name'], due_str))
+                        print("Updated event : {} \n \tTo DateTime : {}".format(event['summary'], due_str))
 
     # Update cached event ids
     with open("event_cache.json", "w") as event_cache_file:
