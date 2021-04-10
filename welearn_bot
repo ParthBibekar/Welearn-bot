@@ -247,13 +247,13 @@ with Session() as s:
                 detail = bs(assignment['intro'], "html.parser").text
                 print(f"    {name} - {detail}")
                 for attachment in assignment['introattachments']:
-                    print(f"        Attachment: {course_name}/{attachment['filename']}")
+                    print(f"        Attachment     : {attachment['filename']}")
                     get_resource(attachment, prefix_path, course_name, link_cache, indent=8)
                 if due:
-                    print(f"        Due on: {due_str}")
+                    print(f"        Due on         : {due_str}")
                     print(f"        Time remaining : {duedelta_str}")
                 else:
-                    print(f"        Due on: {due_str} ({duedelta_str} ago)")
+                    print(f"        Due on         : {due_str} ({duedelta_str} ago)")
 
                 # Get submission details
                 submission_response = s.post(server_url, \
@@ -270,9 +270,9 @@ with Session() as s:
                                     filename = submitted_file['filename']
                                     submission_date = datetime.fromtimestamp(int(submitted_file['timemodified']))
                                     submission_date_str = submission_date.strftime('%a %d %b, %Y, %H:%M:%S')
-                                    print(f"        Submission: {filename} ({submission_date_str})")
+                                    print(f"        Submission     : {filename} ({submission_date_str})")
                 if not submission_made:
-                    print(f"        Submission: NONE")
+                    print(f"        Submission     : NONE")
                 print()
         write_link_cache(link_cache)
         sys.exit(0)
@@ -308,7 +308,7 @@ with Session() as s:
                 url_detail = bs(url["intro"], "html.parser").text
                 url_link = url["externalurl"]
                 print(f"    {url_name} - {url_detail}")
-                print(f"        Link: {url_link}")
+                print(f"        Link : {url_link}")
                 print()
             print()
         sys.exit(0)
