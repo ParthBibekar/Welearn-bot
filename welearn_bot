@@ -10,6 +10,7 @@ import os, sys
 import errno
 import argparse
 import json
+import getpass
 
 # Get command line options
 parser = argparse.ArgumentParser(description="A command line client for interacting with WeLearn.", formatter_class=argparse.RawTextHelpFormatter)
@@ -58,8 +59,18 @@ elif platform == "win32":
     configfile = os.path.expanduser("~/welearn.ini")
 config = RawConfigParser(allow_no_value=True)
 config.read(configfile)
-username = config["auth"]["username"]
-password = config["auth"]["password"]
+
+username = ""
+password = ""
+try:
+    username = config["auth"]["username"]
+except KeyError:
+    username = input("Username : ")
+
+try:
+    password = config["auth"]["password"]
+except KeyError:
+    password = getpass.getpass("Password : ", stream=None)
 
 # Also extract the list of 'ALL' courses
 all_courses = list(config["courses"].keys())
