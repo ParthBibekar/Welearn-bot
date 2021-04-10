@@ -16,7 +16,7 @@ setup(
     author = "Parth Bibekar",
     author_email = "bibekarparth24@gmail.com",
     url = "https://github.com/ParthBibekar/Welearn-bot",
-    version = "1.0.0",
+    version = "1.0.1",
     license = "MIT",
     scripts = ["welearn_bot"],
     install_requires = requirements
