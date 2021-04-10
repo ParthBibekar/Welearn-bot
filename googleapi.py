@@ -14,6 +14,8 @@ from sys import platform
 import os, sys
 import argparse
 import json
+import jsonpickle
+from json import JSONEncoder
 
 # Get command line options
 parser = argparse.ArgumentParser(description="A bot which can batch download files from WeLearn.")
@@ -28,10 +30,13 @@ if len(args.courses) == 0 and not args.dueassignments:
 
 if platform == "linux" or platform == "linux2":
     configfile = os.path.expanduser("~/.welearnrc")
+    client_secret_loc = os.path.expanduser("~/client_secret.json")
 elif platform == "darwin":
     configfile = os.path.expanduser("~/.welearnrc")
+    client_secret_loc = os.path.expanduser("~/client_secret.json")
 elif platform == "win32":
-    configfile = os.path.expanduser("welearnrc.ini")
+    configfile = os.path.expanduser("~/welearn.ini")
+    client_secret_loc = os.path.expanduser("~/client_secret.json")
 
 config = RawConfigParser(allow_no_value=True)
 config.read(configfile)
@@ -48,13 +53,13 @@ if 'ALL' in map(str.upper, args.courses):
     args.courses = all_courses
 
 # Read from a cache of links
-event_cache = set()
-if os.path.exists(".event_cache"):
-    with open(".event_cache") as event_cache_file:
-        for event in event_cache_file.readlines():
-            event_cache.add(event.strip())
-print("Loaded event cache")
+event_cache = dict()
+if os.path.exists("event_cache.json"):
+    with open("event_cache.json") as f:
+        event_cache = json.load(f)
+print("Event Cache Loaded 👌")
 
+eventkeys = event_cache.keys()
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 creds = None
@@ -69,14 +74,35 @@ if not creds or not creds.valid:
         creds.refresh(Request())
     else:
         flow = InstalledAppFlow.from_client_secrets_file(
-            '../client_secret.json', SCOPES)
+            client_secret_loc, SCOPES)
         creds = flow.run_local_server(port=0)
     # Save the credentials for the next run
     with open('token.json', 'w') as token:
         token.write(creds.to_json())
 service = build('calendar', 'v3', credentials=creds)
-print("Loaded API service")
+print("API service Loaded 👌")
 
+def generatedict(name, description, start, end, reminders=True):
+    newevent = {
+        'summary': name,
+        'location' : '',
+        'description' : description,
+        'start' : {
+            'dateTime' : start,
+            'timeZone' : 'Asia/Kolkata',
+        },
+        'end' : {
+            'dateTime' : end,
+            'timeZone' : 'Asia/Kolkata',
+        },
+        'reminders': {
+            'useDefault': reminders,
+            'overrides': [
+                {'method': 'popup', 'minutes': 10},
+            ],
+        },
+    }
+    return newevent
 
 with Session() as s:
     # Login to WeLearn with supplied credentials
@@ -111,33 +137,26 @@ with Session() as s:
                 due = duedelta.total_seconds() > 0
                 endtime = duedate + timedelta(hours = 1)
                 end_str = endtime.isoformat()
-                if assignment_id not in event_cache and due:
-                    # Push the events to the calendar
-                    newevent = {
-                        'summary': assignment['name'],
-                        'location' : '',
-                        'description' : assignment['intro'],
-                        'start' : {
-                            'dateTime' : due_str,
-                            'timeZone' : 'Asia/Kolkata',
-                        },
-                        'end' : {
-                            'dateTime' : end_str,
-                            'timeZone' : 'Asia/Kolkata',
-                        },
-                        'reminders': {
-                            'useDefault': False,
-                            'overrides': [
-                                {'method': 'popup', 'minutes': 10},
-                            ],
-                        },
-                    }
-                    print("Uploading Event : {} at time : {}".format(assignment['name'], due_str))
-                    event_cache.add(assignment_id)
-                    service.events().insert(calendarId='primary', body=newevent).execute()
+                if (str(assignment_id) not in eventkeys) and due:
+                    newevent = generatedict(assignment['name'], assignment['intro'], due_str, end_str, False)
+                    print("Uploading Event : {} \n \t At DateTime : {}".format(assignment['name'], due_str))
+                    added_event = service.events().insert(calendarId='primary', body=newevent).execute()
+                    eventid = added_event['id']
+                    event_cache[assignment_id] = eventid
+
+                elif str(assignment_id) in eventkeys and due:
+                    # If the assignment date has been updated then update it
+                    # First getting all the events
+                    event = service.events().get(calendarId='primary', eventId=event_cache[str(assignment_id)]).execute()
+                    if event['start']['dateTime'] != (due_str + "+05:30"):
+                        event['start']['dateTime'] = due_str
+                        event['end']['dateTime'] = end_str
+                        updated_event = service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
+                        event_cache[assignment_id] = updated_event['id']
+                        print("Updated event : {} \n \tTo DateTime : {}".format(event['name'], due_str))
+
     # Update cached event ids
-    with open(".event_cache", "w") as event_cache_file:
-        for event in list(event_cache):
-            event_cache_file.write(str(event) + "\n")
+    with open("event_cache.json", "w") as event_cache_file:
+        json.dump(event_cache, event_cache_file)
 
-
+print("👍")
