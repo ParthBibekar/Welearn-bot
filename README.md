@@ -14,6 +14,13 @@ This script runs on `python3`. To install it on your system, run
 pip install welearn-bot-iiserkol
 ```
 
+### Running from source
+Clone this repo or download the source code, and navigate to that directory. To install dependencies, run
+```
+pip install -r requirements.txt
+```
+You can now simply call the `welearn_bot` script using `python3`.
+
 ## Configuration
 On \*nix systems (linux, macos), create a `~/.welearnrc` file; on Windows, create a `welearn.ini` in your `C:/Users/USERNAME/` folder.
 Inside, fill in your details in the following format.
