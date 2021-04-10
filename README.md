@@ -34,6 +34,8 @@ ES5505
 ignore = mp4,mkv
 pathprefix = ~/welearn
 ```
+In `[auth]` section the `password` field can be left blank. The program will prompt for password.
+
 The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
 This way, you can choose to omit redundant courses in this section.
 
