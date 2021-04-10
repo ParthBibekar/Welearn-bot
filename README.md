@@ -11,11 +11,11 @@ Using the [Moodle Web Services API](https://docs.moodle.org/dev/Web_services) ma
 ## Installation
 This script runs on `python3`. To install it on your system, run
 ```
-pip3 install welearn-bot-iiserkol
+pip install welearn-bot-iiserkol
 ```
 
 ## Configuration
-On \*nix systems (linux, macos), create a `~/.welearnrc` file; on windows, create a `welearn.ini` in your `C:/Users/USERNAME/` folder.
+On \*nix systems (linux, macos), create a `~/.welearnrc` file; on Windows, create a `welearn.ini` in your `C:/Users/USERNAME/` folder.
 Inside, fill in your details in the following format.
 
 ```
