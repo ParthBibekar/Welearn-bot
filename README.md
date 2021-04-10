@@ -34,6 +34,8 @@ ES5505
 ignore = mp4,mkv
 pathprefix = ~/welearn
 ```
+You may omit any or all of your `[auth]` credentials, in which case you will be prompted each time you run the program.
+
 The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
 This way, you can choose to omit redundant courses in this section.
 
