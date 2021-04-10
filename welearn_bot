@@ -73,7 +73,10 @@ except KeyError:
     password = getpass.getpass("Password : ", stream=None)
 
 # Also extract the list of 'ALL' courses
-all_courses = list(config["courses"].keys())
+try:
+    all_courses = list(config["courses"].keys())
+except KeyError:
+    all_courses = []
 all_courses = map(str.strip, all_courses)
 all_courses = map(str.upper, all_courses)
 all_courses = list(all_courses)
