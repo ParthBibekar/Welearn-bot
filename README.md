@@ -134,7 +134,6 @@ and put all the course directories in the `~/notes` folder, run
 ```
 welearn_bot files PH2202 -fp ~/notes 
 ```
-<<<<<<< HEAD
 
 
 ## TODO
@@ -167,5 +166,3 @@ Just select the account of the test user or your own.
 ## Remember
 
 The token expires after a day just delete the file and run the program again it will generate a new token.
-=======
->>>>>>> main
