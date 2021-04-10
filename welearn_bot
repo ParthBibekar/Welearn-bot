@@ -107,7 +107,7 @@ try:
     prefix_path = os.path.expanduser(config["files"]["pathprefix"])
     prefix_path = os.path.abspath(prefix_path)
     if not os.path.isdir(prefix_path):
-        print(prefix_path, "does not exist!")
+        print(prefix_path, "does not exist! Please create an empty directory ", prefix_path)
         sys.exit(errno.ENOTDIR)
 except KeyError:
     prefix_path = ""
