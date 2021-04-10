@@ -96,8 +96,11 @@ try:
     prefix_path = os.path.expanduser(config["files"]["pathprefix"])
     prefix_path = os.path.abspath(prefix_path)
     if not os.path.isdir(prefix_path):
-        print(prefix_path, "does not exist!")
-        sys.exit(errno.ENOTDIR)
+        try:
+            os.mkdir(prefix_path)
+        except FileNotFoundError:
+            print(prefix_path, "does not exist!")
+            sys.exit(errno.ENOTDIR)
 except KeyError:
     prefix_path = ""
 
