@@ -61,7 +61,7 @@ print("Event Cache Loaded 👌")
 
 eventkeys = event_cache.keys()
 
-SCOPES = ['https://www.googleapis.com/auth/calendar']
+SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 creds = None
 # The file token.json stores the user's access and refresh tokens, and is
 # created automatically when the authorization flow completes for the first
