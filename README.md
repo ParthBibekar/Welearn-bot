@@ -143,8 +143,8 @@ welearn_bot files PH2202 -fp ~/notes
 - [x] List assignments
 - [x] Deal with image files and other resources, which are nested within a resource page
 - [x] Deal with files updated over time (check last modified)
+- [x] Add events to Google calendar
 - [ ] Allow finer control over resources to download (time range, filetype)
-- [ ] Add events to Google calendar
 
 # Google API
 
