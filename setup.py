@@ -1,5 +1,10 @@
 from setuptools import setup
 
+requirements = []
+with open('requirements.txt', 'r') as fh:
+    for line in fh:
+        requirements.append(line.strip())
+
 setup(
     name = "welearn-bot-iiserkol",
     description = "A command line client for WeLearn, in the IISER Kolkata domain",
@@ -8,5 +13,6 @@ setup(
     url = "https://github.com/ParthBibekar/Welearn-bot",
     version = "1.0.0",
     license = "MIT",
-    scripts = ["welearn_bot"]
+    scripts = ["welearn_bot"],
+    install_requires = requirements
 )
