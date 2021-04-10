@@ -150,7 +150,7 @@ welearn_bot files PH2202 -fp ~/notes
 
 Follow the steps given below to create a Google Cloud Console and generate an OAuth2.0 Client ID (ClientSecret.json)
 
-- Go to console.cloud.google.com. If you are new to the platform you will see a prompt just click agree and continue.
+- Go to [Google cloud console](https://console.cloud.google.com/). If you are new to the platform you will see a prompt just click agree and continue.
 - Click on "CREATE PROJECT" > Enter a suitable name leave the organization as "No Organization".
 - In the search bar search for "google calendar api" and enable it.
 - Click on Credentials > CONFIGURE CONSENT SCREEN
