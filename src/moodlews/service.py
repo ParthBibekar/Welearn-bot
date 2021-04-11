@@ -1,11 +1,12 @@
 from requests import Session
+import urllib.parse
 import json
 
 class Moodle:
     def __init__(self, baseurl):
         self.baseurl = baseurl
-        self.login_url = baseurl + "/login/token.php"
-        self.server_url = baseurl + "/webservice/rest/server.php"
+        self.login_url = urllib.parse.urljoin(baseurl, "login/token.php")
+        self.server_url = urllib.parse.urljoin(baseurl, "webservice/rest/server.php")
         self.session = Session()
 
     def __get_response(self, session, url, **data):
