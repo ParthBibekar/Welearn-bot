@@ -14,7 +14,6 @@ from sys import platform
 import os, sys
 import argparse
 import json
-import jsonpickle
 from json import JSONEncoder
 
 # Get command line options
@@ -30,13 +29,13 @@ if len(args.courses) == 0 and not args.dueassignments:
 
 if platform == "linux" or platform == "linux2":
     configfile = os.path.expanduser("~/.welearnrc")
-    client_secret_loc = os.path.expanduser("~/client_secret.json")
+    # client_secret_loc = os.path.expanduser("~/client_secret.json")
 elif platform == "darwin":
     configfile = os.path.expanduser("~/.welearnrc")
-    client_secret_loc = os.path.expanduser("~/client_secret.json")
+    # client_secret_loc = os.path.expanduser("~/client_secret.json")
 elif platform == "win32":
     configfile = os.path.expanduser("~/welearn.ini")
-    client_secret_loc = os.path.expanduser("~/client_secret.json")
+    # client_secret_loc = os.path.expanduser("~/client_secret.json")
 
 config = RawConfigParser(allow_no_value=True)
 config.read(configfile)
@@ -47,6 +46,23 @@ all_courses = list(config["courses"].keys())
 all_courses = map(str.strip, all_courses)
 all_courses = map(str.upper, all_courses)
 all_courses = list(all_courses)
+
+try:
+    OAUTH_CLIENT_ID = config["gcal"]["client_id"]
+    OAUTH_CLIENT_SECRET = config["gcal"]["client_secret"]
+
+    client_config = {
+        "installed": {
+            "client_id": OAUTH_CLIENT_ID,
+            "client_secret": OAUTH_CLIENT_SECRET,
+            "redirect_uris": ["http://localhost", "urn:ietf:wg:oauth:2.0:oob"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://accounts.google.com/o/oauth2/token"
+        }
+    }
+except KeyError:
+    print("Invalid configuration!")
+    sys.exit(1)
 
 # Select all courses from config if 'ALL' keyword is used
 if 'ALL' in map(str.upper, args.courses):
@@ -73,8 +89,7 @@ if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
     else:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            client_secret_loc, SCOPES)
+        flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
         creds = flow.run_local_server(port=0)
     # Save the credentials for the next run
     with open('token.json', 'w') as token:
