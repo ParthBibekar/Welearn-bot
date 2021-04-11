@@ -26,26 +26,25 @@ class MoodleClient:
         return json.loads(response.content)
     
     def authenticate(self, username, password):
-        login = self.response_json( \
-            self.login_url, \
-            username=username, \
-            password=password, \
-            service="moodle_mobile_app" \
+        login = self.response_json(
+            self.login_url,
+            username=username,
+            password=password,
+            service="moodle_mobile_app"
         )
         try:
-            token = login['token']
-            self.token = token
-            return token
+            self.token = login['token']
+            return self.token
         except KeyError:
             return False
     
     def server(self, function, **data):
-        return self.response_json( \
-            self.server_url, \
-            wstoken=self.token, \
-            moodlewsrestformat="json", \
-            wsfunction=function, \
-            **data \
+        return self.response_json(
+            self.server_url,
+            wstoken=self.token,
+            moodlewsrestformat="json",
+            wsfunction=function,
+            **data
         )
 
     def close(self):
