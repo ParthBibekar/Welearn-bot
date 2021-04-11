@@ -152,9 +152,11 @@ with Session() as s:
                 due = duedelta.total_seconds() > 0
                 endtime = duedate + timedelta(hours = 1)
                 end_str = endtime.isoformat()
-                if (str(assignment_id) not in eventkeys) and due:
+
+                if str(assignment_id) not in eventkeys and due:
+                    # If the assignment is new and not pushed to the events
                     newevent = generatedict(assignment['name'], assignment['intro'], due_str, end_str, False)
-                    print("Uploading Event : {} \n \t At DateTime : {}".format(assignment['name'], due_str))
+                    print(f"Uploading Event : {assignment['name']} \n \t At DateTime : {due_str}")
                     added_event = service.events().insert(calendarId='primary', body=newevent).execute()
                     eventid = added_event['id']
                     event_cache[assignment_id] = eventid
@@ -168,10 +170,10 @@ with Session() as s:
                         event['end']['dateTime'] = end_str
                         updated_event = service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
                         event_cache[assignment_id] = updated_event['id']
-                        print("Updated event : {} \n \tTo DateTime : {}".format(event['summary'], due_str))
+                        print(f"Updated event : {event['summary']} \n \tTo DateTime : {due_str}")
 
     # Update cached event ids
     with open("event_cache.json", "w") as event_cache_file:
         json.dump(event_cache, event_cache_file)
 
-print("Your calendar is now up-to-date! 👍")
+print("The events are now added to your Calendar 👍")

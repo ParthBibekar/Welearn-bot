@@ -28,8 +28,8 @@ parser.add_argument("courses", nargs="*", help="IDs of the courses to download f
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments with the 'assignments' action")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
-parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
-
+parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc")
+parser.add_argument("-gcal", "--gcalendar", nargs="store_true", help="create and update the events such as assignment deadlines to your google calendar.")
 args = parser.parse_args()
 
 # Get the mode
