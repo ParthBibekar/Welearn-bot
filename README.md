@@ -134,31 +134,3 @@ and put all the course directories in the `~/notes` folder, run
 ```
 welearn_bot files PH2202 -fp ~/notes 
 ```
-
-# Google API
-
-Follow the steps given below to create a Google Cloud Console and generate an OAuth2.0 Client ID (ClientSecret.json)
-
-- Go to [Google cloud console](https://console.cloud.google.com/). If you are new to the platform you will see a prompt just click agree and continue.
-- Click on "CREATE PROJECT" > Enter a suitable name leave the organization as "No Organization".
-- In the search bar search for "google calendar api" and enable it.
-- Click on Credentials > CONFIGURE CONSENT SCREEN
-- Click External. Enter the "App Name", "User support email" and "Developer Contact Information". Click **SAVE AND CONTINUE**. Enter Test User's Email ID which you will be using to add events >  **SAVE AND CONTINUE** > **BACK TO DASHBOARD**.
-- In API's & Services click on Credentials. **CREATE CREDENTIALS** > Set the Application type to "Desktop app" > Add the client name > **CREATE**.
-- You will see a prompt just click OK and then in the OAuth 2.0 Client ID's click on the client name. You'll see a page with "Client ID" and "Client secret" values 
-given on the right. Copy these and update your config file with the following lines, filling in your values.
-```
-[gcal]
-client_id = xxxxxxxxxxxxxxx.apps.googleusercontent.com
-client_secret = xxxxxxxxxxxxxxxxx
-```
-
-## Usage
-```
-py .\googleapi.py -d ALL
-```
-Just select the account of the test user or your own.
-
-## Remember
-
-The token expires after a day just delete the file and run the program again it will generate a new token.
