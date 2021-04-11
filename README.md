@@ -66,10 +66,10 @@ You will have to authenticate using OAuth2.0 - follow the given step.
 - Go to the [Google Cloud Console](https://console.cloud.google.com/), while logged in to your desired account. If you are new to the platform, you will be prompted to agree and continue.
 - Click on _Create Project_. Enter a suitable name, and leave the organization blank.
 - In the search bar, search for "Google Calendar API", and enable it.
-- Click on _Credentials_ > _Configure Consent Screen_
-- Click on _External_. Enter the "App Name", "User support email" and "Developer Contact Information" with your desired values. Click _Save and Continue_.
+- Click on _Credentials_ > _Configure Consent Screen_.
+- Choose _External_. Enter the "App Name", "User support email" and "Developer Contact Information" with your desired values. Click _Save and Continue_.
 - Fill in the "Test User's Email ID" with the address which you will be using to add events. Click _Save and Continue_ > _Back to Dashboard_.
-- In "API's & Services", click on _Credentials_ > _Create Credentials_. Set the Application type to "Desktop app", add a suitable client name, and click _Create_. Upon being prompted, click _OK_.
+- In "API's & Services", click on _Credentials_ > _Create Credentials_ > _OAuth client ID_. Set the Application type to "Desktop app", add a suitable client name, and click _Create_. Upon being prompted, click _OK_.
 - In the "OAuth 2.0 Client ID's", click on the client name you just created. You'll see a page with "Client ID" and "Client secret" values 
 given on the right. Copy these and add the following lines to your config file (`.welearnrc` or `welearn.ini`), filling in your values.
 ```
