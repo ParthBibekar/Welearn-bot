@@ -135,16 +135,6 @@ and put all the course directories in the `~/notes` folder, run
 welearn_bot files PH2202 -fp ~/notes 
 ```
 
-
-## TODO
-- [x] Download files in separate directories
-- [x] Allow multiple courses, list courses
-- [x] Do not repeat downloads (cache past links)
-- [x] List assignments
-- [x] Deal with image files and other resources, which are nested within a resource page
-- [x] Deal with files updated over time (check last modified)
-- [ ] Allow finer control over resources to download (time range, filetype)
-
 # Google API
 
 Follow the steps given below to create a Google Cloud Console and generate an OAuth2.0 Client ID (ClientSecret.json)
