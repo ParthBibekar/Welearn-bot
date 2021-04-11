@@ -69,7 +69,7 @@ You will have to authenticate using OAuth2.0 - follow the given step.
 - Click on _Credentials_ > _Configure Consent Screen_
 - Click on _External_. Enter the "App Name", "User support email" and "Developer Contact Information" with your desired values. Click _Save and Continue_.
 - Fill in the "Test User's Email ID" with the address which you will be using to add events. Click _Save and Continue_ > _Back to Dashboard_.
-- In "API's & Services", click on _Credentials_ > _Create Credentials_. Set the Application type to "Desktop app", add the client name, and click _Create_. Upon being prompted, click _OK_.
+- In "API's & Services", click on _Credentials_ > _Create Credentials_. Set the Application type to "Desktop app", add a suitable client name, and click _Create_. Upon being prompted, click _OK_.
 - In the "OAuth 2.0 Client ID's", click on the client name you just created. You'll see a page with "Client ID" and "Client secret" values 
 given on the right. Copy these and add the following lines to your config file (`.welearnrc` or `welearn.ini`), filling in your values.
 ```
@@ -79,6 +79,13 @@ client_secret = xxxxxxxxxxxxxxxxx
 ```
 When you run the program using the `--gcalendar` option for the first time, you will be taken to an OAuth2.0 login page in your browser.
 You will stay logged in for at most a day.
+
+If you want your events to be saved to a calendar other than your primary one, go to Google Calendar and create a new calendar.
+Once it appears under "My Calendars", open its settings, scroll down to "Integrate calendar" and copy the "Calendar ID".
+Update your config with this line under the `[gcal]` section.
+```
+calendar_id = c_xxxxxxxxxxxxxxxxxxxxxxxxxx@group.calendar.google.com
+```
 
 ## Usage
 Run `welearn_bot -h` to get the following help message.
