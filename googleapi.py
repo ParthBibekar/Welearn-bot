@@ -174,4 +174,4 @@ with Session() as s:
     with open("event_cache.json", "w") as event_cache_file:
         json.dump(event_cache, event_cache_file)
 
-print("👍")
+print("Your calendar is now up-to-date! 👍")
