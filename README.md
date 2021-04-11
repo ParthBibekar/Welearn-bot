@@ -36,17 +36,21 @@ PH2202
 CH3303
 LS4404
 ES5505
-
-[files]
-ignore = mp4,mkv
-pathprefix = ~/welearn
 ```
+
 You may omit any or all of your `[auth]` credentials, in which case you will be prompted each time you run the program.
 
 The `ALL` keyword will act as shorthand for the course names present in the `[courses]` section.
 This way, you can choose to omit redundant courses in this section.
 
-The `[files]` section lets you specify settings about the organization of your files.
+
+For more control over the organization of your files, add the `[files]` section to your config.
+```
+[files]
+ignore = mp4,mkv
+pathprefix = ~/welearn
+```
+
 All files with extensions listed in the `ignore` option will be not be downloaded.
 This is useful for ignoring typically large files such as video files.
 This setting is overridden by the `--ignoretypes` command line option, which in turn is overridden by the `--forcedownload` flag
@@ -55,10 +59,31 @@ The `pathprefix` is used to specify a common path for storing all your WeLearn c
 your resources and assignment files.
 This is overriden by the `--pathprefix` command line option.
 
+### Google calendar integration
+Integration with Google Calendar is completely optional. This feature allows you to save your assignment dates directly to Google Calendar, when you use the `--gcalendar` option.
+You will have to authenticate using OAuth2.0 - follow the given step.
+
+- Go to the [Google Cloud Console](https://console.cloud.google.com/), while logged in to your desired account. If you are new to the platform, you will be prompted to agree and continue.
+- Click on _Create Project_. Enter a suitable name, and leave the organization blank.
+- In the search bar, search for "Google Calendar API", and enable it.
+- Click on _Credentials_ > _Configure Consent Screen_
+- Click on _External_. Enter the "App Name", "User support email" and "Developer Contact Information" with your desired values. Click _Save and Continue_.
+- Fill in the "Test User's Email ID" with the address which you will be using to add events. Click _Save and Continue_ > _Back to Dashboard_.
+- In "API's & Services", click on _Credentials_ > _Create Credentials_. Set the Application type to "Desktop app", add the client name, and click _Create_. Upon being prompted, click _OK_.
+- In the "OAuth 2.0 Client ID's", click on the client name you just created. You'll see a page with "Client ID" and "Client secret" values 
+given on the right. Copy these and add the following lines to your config file (`.welearnrc` or `welearn.ini`), filling in your values.
+```
+[gcal]
+client_id = xxxxxxxxxxxxxxx.apps.googleusercontent.com
+client_secret = xxxxxxxxxxxxxxxxx
+```
+When you run the program using the `--gcalendar` option for the first time, you will be taken to an OAuth2.0 login page in your browser.
+You will stay logged in for at most a day.
+
 ## Usage
 Run `welearn_bot -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [-d] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] action [courses ...]
+usage: welearn_bot [-h] [-d] [-c] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] action [courses ...]
 
 A command line client for interacting with WeLearn.
 
@@ -75,6 +100,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -d, --dueassignments  show only due assignments with the 'assignments' action
+  -c, --gcalendar       add due assignments to Google Calendar with the 'assignments' action
   -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
                         ignores the specified extensions when downloading, overrides .welearnrc
   -f, --forcedownload   force download files even if already downloaded/ignored
@@ -114,6 +140,11 @@ Make sure that the `-d` flag comes first!
 To list all urls from the CH3303 course, run
 ```
 welearn_bot urls CH3303
+```
+### Calendar integration
+To list due assignments from all courses, and add them to your calendar, run
+```
+welearn_bot -dc assignments ALL
 ```
 ### Ignoring filetypes
 To download all resources from the course CH3303, ignoring pdf files, run
