@@ -12,6 +12,10 @@ import argparse
 import json
 import getpass
 
+# Server data
+login_url = "https://welearn.iiserkol.ac.in/login/token.php"
+server_url = "https://welearn.iiserkol.ac.in/webservice/rest/server.php"
+
 # Get command line options
 parser = argparse.ArgumentParser(description="A command line client for interacting with WeLearn.", formatter_class=argparse.RawTextHelpFormatter)
 
@@ -139,6 +143,11 @@ def write_link_cache(link_cache):
     with open(link_cache_filepath, "w") as link_cache_file:
         json.dump(link_cache, link_cache_file)
 
+# Helper function to get server response as a dictionary
+def get_response(session, url, **data):
+    response = session.post(url, data)
+    return json.loads(response.content)
+
 # Helper function to retrieve a file/resource from the server
 def get_resource(res, prefix, course, cache, indent=0):
     filename = res['filename']
@@ -177,10 +186,7 @@ def get_resource(res, prefix, course, cache, indent=0):
 
 def get_courses_by_id():
     # Get a list of all courses
-    courses_response = s.post(server_url, \
-        data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_course_get_courses_by_field'})
-    # Parse as json
-    courses = json.loads(courses_response.content)
+    courses = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="core_course_get_courses_by_field")
         
     # Create a dictionary of course ids versus course names
     course_ids = dict()
@@ -192,38 +198,27 @@ def get_courses_by_id():
 
 with Session() as s:
     # Login to WeLearn with supplied credentials
-    login_url = "https://welearn.iiserkol.ac.in/login/token.php"
-    login_response = s.post(login_url, data = {'username' : username, 'password' : password, 'service' : 'moodle_mobile_app'})
+    login_response = get_response(s, login_url, username=username, password=password, service="moodle_mobile_app")
     try:
-        token = json.loads(login_response.content)['token']
+        token = login_response['token']
     except KeyError:
         print("Invalid credentials!")
         sys.exit(errno.EACCES)
 
-    server_url = "https://welearn.iiserkol.ac.in/webservice/rest/server.php"
 
     if action == "whoami":
         # Get core user information
-        info_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_webservice_get_site_info'})
-        # Parse as json
-        info = json.loads(info_response.content)
+        info = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="core_webservice_get_site_info")
         print(info['fullname'])
         sys.exit(0)
 
     elif action == "courses":
         # Get core user information
-        info_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_webservice_get_site_info'})
-        # Parse as json
-        info = json.loads(info_response.content)
+        info = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="core_webservice_get_site_info")
         userid = info["userid"]
         
         # Get enrolled courses information
-        courses_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'core_enrol_get_users_courses', 'userid' : userid})
-        # Parse as json
-        courses = json.loads(courses_response.content)
+        courses = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="core_enrol_get_users_courses", userid=userid)
         for course in courses:
             course_name = course["fullname"]
             star = " "
@@ -235,10 +230,7 @@ with Session() as s:
     elif action == "assignments":
         link_cache = read_link_cache()
         # Get assignment data from server
-        assignments_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_assignments'})
-        # Parse as json
-        assignments = json.loads(assignments_response.content)
+        assignments = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="mod_assign_get_assignments")
 
         # Assignments are grouped by course
         for course in assignments['courses']:
@@ -274,10 +266,8 @@ with Session() as s:
                     print(f"        Due on         : {due_str} ({duedelta_str} ago)")
 
                 # Get submission details
-                submission_response = s.post(server_url, \
-                    data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_assign_get_submission_status', \
-                            'assignid' : assignment['id']})
-                submission = json.loads(submission_response.content)
+                submission = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="mod_assign_get_submission_status", \
+                            assignid=assignment["id"])
                 submission_made = False
                 for plugin in submission['lastattempt']['submission']['plugins']:
                     if plugin['name'] == "File submissions":
@@ -299,10 +289,7 @@ with Session() as s:
         course_ids = get_courses_by_id()
 
         # Get a list of available urls
-        urls_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_url_get_urls_by_courses'})
-        # Parse as json
-        urls = json.loads(urls_response.content)
+        urls = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="mod_url_get_urls_by_courses")
         
         # Iterate through all urls, and build a dictionary
         url_list = dict()
@@ -336,10 +323,7 @@ with Session() as s:
         course_ids = get_courses_by_id()
 
         # Get a list of available resources
-        resources_response = s.post(server_url, \
-            data = {'wstoken' : token, 'moodlewsrestformat' : 'json', 'wsfunction' : 'mod_resource_get_resources_by_courses'})
-        # Parse as json
-        resources = json.loads(resources_response.content)
+        resources = get_response(s, server_url, wstoken=token, moodlewsrestformat="json", wsfunction="mod_resource_get_resources_by_courses")
 
         # Iterate through all resources, and only fetch ones from the specified course
         for resource in resources['resources']:
