@@ -18,13 +18,15 @@ class MoodleClient:
         self.server_url = urllib.parse.urljoin(baseurl, "webservice/rest/server.php")
         self.session = Session()
 
-    def __get_response(self, session, url, **data):
-        response = session.post(url, data)
+    def response(self, url, **data):
+        return self.session.post(url, data)
+    
+    def response_json(self, url, **data):
+        response = self.response(url, **data)
         return json.loads(response.content)
     
     def authenticate(self, username, password):
-        login = self.__get_response( \
-            self.session, \
+        login = self.response_json( \
             self.login_url, \
             username=username, \
             password=password, \
@@ -38,14 +40,13 @@ class MoodleClient:
             return False
     
     def server(self, function, **data):
-        return self.__get_response( \
-            self.session, \
+        return self.response_json( \
             self.server_url, \
             wstoken=self.token, \
             moodlewsrestformat="json", \
             wsfunction=function, \
             **data \
         )
-    
+
     def close(self):
         self.session.close()
