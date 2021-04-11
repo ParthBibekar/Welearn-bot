@@ -156,6 +156,11 @@ if args.gcalendar:
         print("Invalid configuration!")
         sys.exit(errno.ENODATA)
 
+    try:
+        gcal_calendar_id = config["gcal"]["calendar_id"]
+    except KeyError:
+        gcal_calendar_id = "primary"
+
     # Connect to the Google Calendar API
     SCOPES = ['https://www.googleapis.com/auth/calendar.events']
     creds = None
@@ -372,17 +377,17 @@ elif action == "assignments":
                 if str(assignment_id) not in event_cache:
                     # Create and push a new event
                     event = create_event(event_name, detail, start_time, end_time, False)
-                    added_event = service.events().insert(calendarId='primary', body=event).execute()
+                    added_event = service.events().insert(calendarId=gcal_calendar_id, body=event).execute()
                     event_id = added_event['id']
                     event_cache[assignment_id] = event_id
                     print(f"        Added event to calendar.")
                 else:
                     # Update event if necessary
-                    event = service.events().get(calendarId='primary', eventId=event_cache[str(assignment_id)]).execute()
+                    event = service.events().get(calendarId=gcal_calendar_id, eventId=event_cache[str(assignment_id)]).execute()
                     if event['start']['dateTime'] != (start_time + "+05:30"):
                         event['start']['dateTime'] = start_time
                         event['end']['dateTime'] = end_time
-                        updated_event = service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
+                        updated_event = service.events().update(calendarId=gcal_calendar_id, eventId=event['id'], body=event).execute()
                         event_cache[assignment_id] = updated_event['id']
                         print(f"        Updated event in calendar.")
             print()
