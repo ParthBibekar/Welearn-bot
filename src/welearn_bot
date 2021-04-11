@@ -3,6 +3,11 @@
 from moodlews.service import MoodleClient
 from moodlews.service import ServerFunctions
 
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+
 from bs4 import BeautifulSoup as bs
 from configparser import RawConfigParser
 from datetime import datetime
@@ -29,9 +34,10 @@ parser.add_argument("action", nargs=1, help="choose from\n\
 Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
 parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini")
 parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments with the 'assignments' action")
+parser.add_argument("-c", "--gcalendar", action="store_true", help="add due assignments to Google Calendar with the 'assignments' action")
 parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
 parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
-parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc",)
+parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc")
 
 args = parser.parse_args()
 
@@ -53,6 +59,9 @@ else:
 
 if args.dueassignments and action != "assignments":
     print("Can only use --dueassignments with 'assignments' action! Use the -h flag for usage.")
+    sys.exit(errno.EPERM)
+if args.gcalendar and action != "assignments":
+    print("Can only use --gcalendar with 'assignments' action! Use the -h flag for usage.")
     sys.exit(errno.EPERM)
 
 # Read the .welearnrc file from the home directory, and extract username and password
@@ -128,6 +137,42 @@ if args.pathprefix:
         print(prefix_path, "does not exist!")
         sys.exit(errno.ENOTDIR)
 
+# Read google calendar info from config
+if args.gcalendar:
+    try:
+        OAUTH_CLIENT_ID = config["gcal"]["client_id"]
+        OAUTH_CLIENT_SECRET = config["gcal"]["client_secret"]
+
+        gcal_client_config = {
+            "installed": {
+                "client_id": OAUTH_CLIENT_ID,
+                "client_secret": OAUTH_CLIENT_SECRET,
+                "redirect_uris": ["http://localhost", "urn:ietf:wg:oauth:2.0:oob"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://accounts.google.com/o/oauth2/token"
+            }
+        }
+    except KeyError:
+        print("Invalid configuration!")
+        sys.exit(errno.ENODATA)
+
+    # Connect to the Google Calendar API
+    SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+    creds = None
+    gcal_token_path = os.path.expanduser("~/.gcal_token")
+    if os.path.exists(gcal_token_path):
+        creds = Credentials.from_authorized_user_file(gcal_token_path, SCOPES)
+    # If there are no valid credentials, login
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_config(gcal_client_config, SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open(gcal_token_path, 'w') as gcal_token:
+            gcal_token.write(creds.to_json())
+    service = build('calendar', 'v3', credentials=creds)
 
 link_cache_filepath = os.path.join(prefix_path, ".link_cache")
 
@@ -145,8 +190,23 @@ def write_link_cache(link_cache):
         json.dump(link_cache, link_cache_file)
 
 
-# Login to WeLearn with supplied credentials
+event_cache_filepath = os.path.expanduser("~/.welearn_event_cache")
 
+# Read from a cache of events
+def read_event_cache():
+    event_cache = dict()
+    if os.path.exists(event_cache_filepath):
+        with open(event_cache_filepath) as event_cache_file:
+            event_cache = json.load(event_cache_file)
+    return event_cache
+
+# Update cached event
+def write_event_cache(event_cache):
+    with open(event_cache_filepath, "w") as event_cache_file:
+        json.dump(event_cache, event_cache_file)
+
+
+# Login to WeLearn with supplied credentials
 moodle = MoodleClient(baseurl)
 token = moodle.authenticate(username, password)
 if not token:
@@ -201,6 +261,28 @@ def get_courses_by_id():
             course_ids[course['id']] = course_name
     return course_ids
 
+def create_event(name, description, start, end, reminders=True):
+    newevent = {
+        'summary': name,
+        'location' : '',
+        'description' : description,
+        'start' : {
+            'dateTime' : start,
+            'timeZone' : 'Asia/Kolkata',
+        },
+        'end' : {
+            'dateTime' : end,
+            'timeZone' : 'Asia/Kolkata',
+        },
+        'reminders': {
+            'useDefault': reminders,
+            'overrides': [
+                {'method': 'popup', 'minutes': 10},
+            ],
+        },
+    }
+    return newevent
+
 
 if action == "whoami":
     # Get core user information
@@ -225,6 +307,8 @@ elif action == "courses":
 
 elif action == "assignments":
     link_cache = read_link_cache()
+    if args.gcalendar:
+        event_cache = read_event_cache()
     # Get assignment data from server
     assignments = moodle.server(ServerFunctions.ASSIGNMENTS)
 
@@ -237,6 +321,7 @@ elif action == "assignments":
         no_assignments = True
         for assignment in course['assignments']:
             # Get the assignment name, details, due date, and relative due date
+            assignment_id = assignment["id"]
             name = assignment['name']
             duedate = datetime.fromtimestamp(int(assignment['duedate']))
             due_str = duedate.strftime('%a %d %b, %Y, %H:%M:%S')
@@ -262,7 +347,7 @@ elif action == "assignments":
                 print(f"        Due on         : {due_str} ({duedelta_str} ago)")
 
             # Get submission details
-            submission = moodle.server(ServerFunctions.ASSIGNMENT_STATUS, assignid=assignment["id"])
+            submission = moodle.server(ServerFunctions.ASSIGNMENT_STATUS, assignid=assignment_id)
             submission_made = False
             for plugin in submission['lastattempt']['submission']['plugins']:
                 if plugin['name'] == "File submissions":
@@ -276,8 +361,35 @@ elif action == "assignments":
                                 print(f"        Submission     : {filename} ({submission_date_str})")
             if not submission_made:
                 print(f"        Submission     : NONE")
+
+            # Write event to calendar
+            if args.gcalendar and due:
+                # Put deadline at the *end* of the event
+                startdate = duedate - timedelta(hours = 1)
+                start_time = startdate.isoformat()
+                end_time = duedate.isoformat()
+                event_name = f"{course_name} - {name}"
+                if str(assignment_id) not in event_cache:
+                    # Create and push a new event
+                    event = create_event(event_name, detail, start_time, end_time, False)
+                    added_event = service.events().insert(calendarId='primary', body=event).execute()
+                    event_id = added_event['id']
+                    event_cache[assignment_id] = event_id
+                    print(f"        Added event to calendar.")
+                else:
+                    # Update event if necessary
+                    event = service.events().get(calendarId='primary', eventId=event_cache[str(assignment_id)]).execute()
+                    if event['start']['dateTime'] != (start_time + "+05:30"):
+                        event['start']['dateTime'] = start_time
+                        event['end']['dateTime'] = end_time
+                        updated_event = service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
+                        event_cache[assignment_id] = updated_event['id']
+                        print(f"        Updated event in calendar.")
             print()
+
     write_link_cache(link_cache)
+    if args.gcalendar:
+        write_event_cache(event_cache)
     sys.exit(0)
 
 elif action == "urls":

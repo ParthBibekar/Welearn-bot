@@ -1,2 +1,5 @@
 requests==2.24.0
+google_auth_oauthlib==0.4.4
 beautifulsoup4==4.9.3
+google_api_python_client==2.1.0
+protobuf==3.15.8
