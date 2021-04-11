@@ -1,3 +1,4 @@
+import setuptools
 from setuptools import setup
 
 requirements = []
@@ -18,6 +19,8 @@ setup(
     url = "https://github.com/ParthBibekar/Welearn-bot",
     version = "1.0.1",
     license = "MIT",
-    scripts = ["welearn_bot"],
+    package_dir={"": "src"},
+    packages=setuptools.find_packages(where="src"),
+    scripts = ["src/welearn_bot"],
     install_requires = requirements
 )
