@@ -18,6 +18,7 @@ import errno
 import argparse
 import json
 import getpass
+import mimetypes
 
 # Server data
 baseurl = "https://welearn.iiserkol.ac.in"
@@ -222,10 +223,15 @@ if not token:
 def get_resource(res, prefix, course, cache, indent=0):
     filename = res['filename']
     course_dir = os.path.join(prefix, course)
-    filepath = os.path.join(course_dir, filename)
     fileurl = res['fileurl']
     _, extension = os.path.splitext(filename)
     extension = str.upper(extension[1:])
+    if extension == "":
+        # Missing extension - guess on the basis of the mimetype
+        extension = mimetypes.guess_extension(res["mimetype"])
+        filename += extension
+        extension = extension[1:]
+    filepath = os.path.join(course_dir, filename)
     timemodified = int(res['timemodified'])
 
     # Only download if forced, or not already downloaded
@@ -434,14 +440,16 @@ elif action == "files":
     link_cache = read_link_cache()
     course_ids = get_courses_by_id()
 
-    # Get a list of available resources
-    resources = moodle.server(ServerFunctions.RESOURCES)
-
-    # Iterate through all resources, and only fetch ones from the specified course
-    for resource in resources['resources']:
-        if resource['course'] in course_ids:
-            course_name = course_ids[resource['course']]
-            for subresource in resource['contentfiles']:
-                get_resource(subresource, prefix_path, course_name, link_cache)
+    # Iterate through each course, and fetch all modules
+    for courseid in course_ids:
+        course_name = course_ids[courseid]
+        page = moodle.server(ServerFunctions.COURSE_CONTENTS, courseid=courseid)
+        for item in page:
+            modules = item.get("modules", [])
+            for module in modules:
+                modname = module.get("modname", "")
+                if modname == "resource" or modname == "folder":
+                    for resource in module["contents"]:
+                        get_resource(resource, prefix_path, course_name, link_cache)
     
     write_link_cache(link_cache)

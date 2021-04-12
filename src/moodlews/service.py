@@ -6,6 +6,7 @@ class ServerFunctions:
     SITE_INFO = "core_webservice_get_site_info"
     ALL_COURSES = "core_course_get_courses_by_field"
     USER_COURSES = "core_enrol_get_users_courses"
+    COURSE_CONTENTS = "core_course_get_contents"
     ASSIGNMENTS = "mod_assign_get_assignments"
     ASSIGNMENT_STATUS = "mod_assign_get_submission_status"
     URLS = "mod_url_get_urls_by_courses"
