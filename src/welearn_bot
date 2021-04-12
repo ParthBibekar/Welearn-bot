@@ -251,7 +251,7 @@ def get_resource(res, prefix, course, cache, subfolder="", indent=0):
         os.makedirs(course_dir)
 
     # Download the file and write to the folder
-    print(" " * indent + "Downloading " + course, ":", filename, end='')
+    print(" " * indent + "Downloading " + os.path.join(course, subfolder, filename), end='')
     response = moodle.response(fileurl, token=token)
     with open(filepath, "wb") as download:
         download.write(response.content)
