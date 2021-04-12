@@ -220,9 +220,9 @@ if not token:
     sys.exit(errno.EACCES)
 
 # Helper function to retrieve a file/resource from the server
-def get_resource(res, prefix, course, cache, indent=0):
+def get_resource(res, prefix, course, cache, subfolder="", indent=0):
     filename = res['filename']
-    course_dir = os.path.join(prefix, course)
+    course_dir = os.path.join(prefix, course, subfolder)
     fileurl = res['fileurl']
     _, extension = os.path.splitext(filename)
     extension = str.upper(extension[1:])
@@ -448,8 +448,13 @@ elif action == "files":
             modules = item.get("modules", [])
             for module in modules:
                 modname = module.get("modname", "")
-                if modname == "resource" or modname == "folder":
+                if modname == "resource":
                     for resource in module["contents"]:
                         get_resource(resource, prefix_path, course_name, link_cache)
+                elif modname == "folder":
+                    folder_name = module.get("name", "")
+                    for resource in module["contents"]:
+                        get_resource(resource, prefix_path, course_name, link_cache, subfolder=folder_name)
+
     
     write_link_cache(link_cache)
