@@ -17,7 +17,7 @@ setup(
     author = "Parth Bibekar",
     author_email = "bibekarparth24@gmail.com",
     url = "https://github.com/ParthBibekar/Welearn-bot",
-    version = "1.0.1",
+    version = "1.2.0",
     license = "MIT",
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
