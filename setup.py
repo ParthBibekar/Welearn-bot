@@ -12,15 +12,19 @@ with open("README.md", encoding="utf-8") as f:
 setup(
     name = "welearn-bot-iiserkol",
     description = "A command line client for WeLearn, in the IISER Kolkata domain",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description= long_description,
+    long_description_content_type = "text/markdown",
     author = "Parth Bibekar",
     author_email = "bibekarparth24@gmail.com",
     url = "https://github.com/ParthBibekar/Welearn-bot",
-    version = "1.2.1",
+    version = "1.2.2_alpha_1",
     license = "MIT",
-    package_dir={"": "src"},
+    package_dir = {"": "src"},
     packages=setuptools.find_packages(where="src"),
-    scripts = ["src/welearn_bot"],
+    entry_points = {
+        "console_scripts": [
+            "welearn_bot=welearnbot.welearnbot:main",
+        ],
+    },
     install_requires = requirements
 )
