@@ -264,7 +264,7 @@ def main():
             os.makedirs(course_dir)
 
         # Download the file and write to the folder
-        print(" " * indent + "Downloading " + os.path.join(course, subfolder, filename), end='')
+        print(" " * indent + "Downloading " + os.path.join(course, subfolder, filename), end='', flush=True)
         response = moodle.response(fileurl, token=token)
         with open(filepath, "wb") as download:
             download.write(response.content)
