@@ -15,15 +15,18 @@ which shows you how to use the accompanying `moodlews.service` module to write y
 ## Installation
 This script runs on `python3`. To install it on your system, run
 ```
-pip install welearn-bot-iiserkol
+pip install --upgrade welearn-bot-iiserkol
 ```
+The `--upgrade` flag ensures that you get the latest version.
+
+If you are on Windows and are new to python, please go through this [quick guide](https://github.com/ParthBibekar/Welearn-bot/wiki/Installing-python-3.x-and-pip-on-Windows).
 
 ### Running from source
 Clone this repo or download the source code, and navigate to that directory. To install dependencies, run
 ```
 pip install -r requirements.txt
 ```
-You can now simply call the `welearn_bot` script within the `src` directory using `python3`.
+You can now navigate to the `src` directory and run `python welearn_bot [options ...]`.
 
 ## Configuration
 On \*nix systems (linux, macos), create a `~/.welearnrc` file; on Windows, create a `welearn.ini` in your `C:/Users/USERNAME/` folder.
