@@ -67,7 +67,7 @@ calendar_id = c_xxxxxxxxxxxxxxxxxxxxxxxxxx@group.calendar.google.com
 ## Usage
 Run `welearn_bot -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [-d] [-c] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] action [courses ...]
+usage: welearn_bot [-h] [-v] [-d] [-c] [-i [IGNORETYPES ...]] [-f] [-p PATHPREFIX] action [courses ...]
 
 A command line client for interacting with WeLearn.
 
@@ -79,10 +79,12 @@ positional arguments:
                             courses     - lists enrolled courses
                             whoami      - shows the user's name and exits
                         Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.
-  courses               IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini
+  courses               IDs of the courses to download files from. The word ALL selects everything
+                        from the [courses] section in .welearnrc or welearn.ini
 
 optional arguments:
   -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
   -d, --dueassignments  show only due assignments with the 'assignments' action
   -c, --gcalendar       add due assignments to Google Calendar with the 'assignments' action
   -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]

@@ -65,13 +65,13 @@ def main():
     parser = argparse.ArgumentParser(description="A command line client for interacting with WeLearn.", formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument("action", nargs=1, help="choose from\n\
-        files       - downloads files/resources\n\
-        assignments - lists assignments, downloads attachments\n\
-        urls        - lists urls\n\
-        courses     - lists enrolled courses\n\
-        whoami      - shows the user's name and exits\n\
-    Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
-    parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects everything from the [courses] section in .welearnrc or welearn.ini")
+    files       - downloads files/resources\n\
+    assignments - lists assignments, downloads attachments\n\
+    urls        - lists urls\n\
+    courses     - lists enrolled courses\n\
+    whoami      - shows the user's name and exits\n\
+Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
+    parser.add_argument("courses", nargs="*", help="IDs of the courses to download files from. The word ALL selects everything \nfrom the [courses] section in .welearnrc or welearn.ini")
     parser.add_argument("-v", "--version", action="version",  version="1.2.2a1")
     parser.add_argument("-d", "--dueassignments", action="store_true", help="show only due assignments with the 'assignments' action")
     parser.add_argument("-c", "--gcalendar", action="store_true", help="add due assignments to Google Calendar with the 'assignments' action")
