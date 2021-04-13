@@ -255,7 +255,7 @@ def main():
 
         # Ignore files with specified extensions
         if extension in ignore_types:
-            print(" " * indent + "Ignoring " + course, ":", filename)
+            print(" " * indent + "Ignoring    " + os.path.join(course, subfolder, filename))
             return
 
         # Create the course folder if not already existing
