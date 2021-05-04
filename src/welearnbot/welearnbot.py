@@ -353,18 +353,18 @@ Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
                 submission = moodle.server(ServerFunctions.ASSIGNMENT_STATUS, assignid=assignment_id)
                 submission_made = False
                 try:
-                	for plugin in submission['lastattempt']['submission']['plugins']:
-                	    	if plugin['name'] == "File submissions":
-                	        	for filearea in plugin['fileareas']:
-                	            		if filearea['area'] == 'submission_files':
-                	                		for submitted_file in filearea['files']:
-                	                    			submission_made = True
-                	                    			filename = submitted_file['filename']
-                	                    			submission_date = datetime.fromtimestamp(int(submitted_file['timemodified']))
-                	                    			submission_date_str = submission_date.strftime('%a %d %b, %Y, %H:%M:%S')
-                	                    			print(f"        Submission     : {filename} ({submission_date_str})")
+                    for plugin in submission['lastattempt']['submission']['plugins']:
+                        if plugin['name'] == "File submissions":
+                            for filearea in plugin['fileareas']:
+                                if filearea['area'] == 'submission_files':
+                                    for submitted_file in filearea['files']:
+                                        submission_made = True
+                                        filename = submitted_file['filename']
+                                        submission_date = datetime.fromtimestamp(int(submitted_file['timemodified']))
+                                        submission_date_str = submission_date.strftime('%a %d %b, %Y, %H:%M:%S')
+                                        print(f"        Submission     : {filename} ({submission_date_str})")
                 except KeyError:
-                	continue
+                    continue
                 if not submission_made:
                     print(f"        Submission     : NONE")
 
