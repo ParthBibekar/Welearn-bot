@@ -77,6 +77,7 @@ Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
     parser.add_argument("-c", "--gcalendar", action="store_true", help="add due assignments to Google Calendar with the 'assignments' action")
     parser.add_argument("-i", "--ignoretypes", nargs="*", help="ignores the specified extensions when downloading, overrides .welearnrc")
     parser.add_argument("-f", "--forcedownload", action="store_true", help="force download files even if already downloaded/ignored")
+    parser.add_argument("-m", "--missingdownload", action="store_true", help="re-download those files which were downloaded earlier but deleted/moved from their location")
     parser.add_argument("-p", "--pathprefix", nargs=1,  help="save the downloads to a custom path, overrides .welearnrc")
 
     args = parser.parse_args()
@@ -252,7 +253,12 @@ Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.")
             cache_time = int(cache[fileurl])
             # Check where the latest version of the file is in cache
             if timemodified == cache_time:
-                return
+                if os.path.exists(filepath):
+                    return
+                if not args.missingdownload and not os.path.exists(filepath):
+                    print(" " * indent + "Missing     " + os.path.join(course, subfolder, filename))
+                    print(" " * indent + "    (previously downloaded but deleted/moved from download location, perhaps try --missingdownload)")
+                    return
 
         # Ignore files with specified extensions
         if extension in ignore_types:
