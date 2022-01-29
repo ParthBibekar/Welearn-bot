@@ -90,6 +90,8 @@ optional arguments:
   -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
                         ignores the specified extensions when downloading, overrides .welearnrc
   -f, --forcedownload   force download files even if already downloaded/ignored
+  -m, --missingdownload
+                        re-download those files which were downloaded earlier but deleted/moved from their location
   -p PATHPREFIX, --pathprefix PATHPREFIX
                         save the downloads to a custom path, overrides .welearnrc
 ```
@@ -151,5 +153,16 @@ To force download all resources from the course PH2202, even if already download
 and put all the course directories in the `~/notes` folder, run
 ```
 welearn_bot files PH2202 -fp ~/notes 
+```
+
+### Missing downloads
+If you've used `welearn_bot` to download some files, say from `MA1101`, but have subsequently deleted or moved them from the download location,
+they will _not_ be downloaded again if you simply run
+```
+welearn_bot files MA1101
+```
+Instead, you will see a message calling these files `Missing`. To download these files again, run
+```
+welearn_bot -m files MA1101
 ```
 
