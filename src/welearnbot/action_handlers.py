@@ -39,6 +39,7 @@ def handle_assignments(
     ignore_types: list[str],
     prefix_path: str,
     link_cache_filepath: str,
+    token: str,
 ) -> None:
     link_cache = read_cache(link_cache_filepath)
     # Get assignment data from server
@@ -81,6 +82,7 @@ def handle_assignments(
                     prefix_path,
                     course_name,
                     link_cache,
+                    token,
                     indent=8,
                 )
             if due:
@@ -166,6 +168,7 @@ def handle_files(
     ignore_types: list[str],
     prefix_path: str,
     link_cache_filepath: str,
+    token: str,
 ) -> None:
     link_cache = read_cache(link_cache_filepath)
     course_ids = resolvers.get_courses_by_id(moodle, args)
@@ -188,6 +191,7 @@ def handle_files(
                             prefix_path,
                             course_name,
                             link_cache,
+                            token,
                         )
                 elif modname == "folder":
                     folder_name = module.get("name", "")
@@ -200,6 +204,7 @@ def handle_files(
                             prefix_path,
                             course_name,
                             link_cache,
+                            token,
                             subfolder=folder_name,
                         )
 
