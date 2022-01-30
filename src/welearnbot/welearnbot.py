@@ -48,7 +48,7 @@ def main():
 
     elif action == "assignments":
         handler.handle_assignments(
-            args, config, moodle, ignore_types, prefix_path, link_cache_filepath
+            args, config, moodle, ignore_types, prefix_path, link_cache_filepath, token
         )
 
     elif action == "urls":
@@ -56,7 +56,7 @@ def main():
 
     elif action == "files":
         handler.handle_files(
-            args, moodle, ignore_types, prefix_path, link_cache_filepath
+            args, moodle, ignore_types, prefix_path, link_cache_filepath, token
         )
 
 
