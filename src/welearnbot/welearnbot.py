@@ -2,6 +2,7 @@
 
 from moodlews.service import MoodleClient
 from moodlews.service import ServerFunctions
+from welearnbot.constants import BASEURL, EVENT_CACHE, LINK_CACHE
 from welearnbot.parser import setup_parser
 
 from typing import Any, Tuple
@@ -265,9 +266,6 @@ def handle_courses(moodle: MoodleClient) -> None:
 
 
 def main():
-    # Server data
-    baseurl = "https://welearn.iiserkol.ac.in"
-
     # Get command line options
     parser = setup_parser()
     args = parser.parse_args()
@@ -285,7 +283,7 @@ def main():
 
     prefix_path = resolve_prefix_path(config, args)
     # Login to WeLearn with supplied credentials
-    moodle = MoodleClient(baseurl)
+    moodle = MoodleClient(BASEURL)
     token = moodle.authenticate(username, password)
     if not token:
         print("Invalid credentials!")
@@ -296,8 +294,8 @@ def main():
         gcal_calendar_id, service = setup_gcal(config)
 
     # Store cache file paths
-    link_cache_filepath = os.path.join(prefix_path, ".link_cache")
-    event_cache_filepath = os.path.expanduser("~/.welearn_event_cache")
+    link_cache_filepath = os.path.join(prefix_path, LINK_CACHE)
+    event_cache_filepath = os.path.expanduser(EVENT_CACHE)
 
     def get_resource(
         res: Any,
