@@ -29,7 +29,7 @@ def handle_courses(moodle: MoodleClient) -> None:
         if course["isfavourite"]:
             star = "*"
         print(f" {star} {course_name}")
-        sys.exit(0)
+    sys.exit(0)
 
 
 def handle_assignments(
@@ -204,4 +204,5 @@ def handle_files(
                         )
 
     write_cache(link_cache_filepath, link_cache)
+    sys.exit(0)
 
