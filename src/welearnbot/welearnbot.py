@@ -230,6 +230,54 @@ def setup_gcal(config: RawConfigParser) -> Tuple[str, Any]:
     return gcal_calendar_id, service
 
 
+def publish_gcal_event(
+    config: RawConfigParser,
+    duedate: datetime,
+    course_name: str,
+    name: str,
+    assignment_id: int,
+    detail: str,
+) -> None:
+    event_cache_filepath = os.path.expanduser(EVENT_CACHE)
+    event_cache = read_cache(event_cache_filepath)
+
+    # Put deadline at the *end* of the event
+    startdate = duedate - timedelta(hours=1)
+    start_time = startdate.isoformat()
+    end_time = duedate.isoformat()
+    event_name = f"{course_name} - {name}"
+
+    gcal_calendar_id, service = setup_gcal(config)
+
+    if str(assignment_id) not in event_cache:
+        # Create and push a new event
+        event = create_event(event_name, detail, start_time, end_time, False)
+        added_event = (
+            service.events().insert(calendarId=gcal_calendar_id, body=event).execute()
+        )
+        event_id = added_event["id"]
+        event_cache[assignment_id] = event_id
+        print(f"        Added event to calendar.")
+    else:
+        # Update event if necessary
+        event = (
+            service.events()
+            .get(calendarId=gcal_calendar_id, eventId=event_cache[str(assignment_id)],)
+            .execute()
+        )
+        if event["start"]["dateTime"] != (start_time + "+05:30"):
+            event["start"]["dateTime"] = start_time
+            event["end"]["dateTime"] = end_time
+            updated_event = (
+                service.events()
+                .update(calendarId=gcal_calendar_id, eventId=event["id"], body=event,)
+                .execute()
+            )
+            event_cache[assignment_id] = updated_event["id"]
+            print(f"        Updated event in calendar.")
+    write_cache(event_cache_filepath, event_cache)
+
+
 def get_courses_by_id(moodle: MoodleClient, args: Namespace):
     # Get a list of all courses
     courses = moodle.server(ServerFunctions.ALL_COURSES)
@@ -289,13 +337,8 @@ def main():
         print("Invalid credentials!")
         sys.exit(errno.EACCES)
 
-    # Read google calendar info from config
-    if args.gcalendar:
-        gcal_calendar_id, service = setup_gcal(config)
-
     # Store cache file paths
     link_cache_filepath = os.path.join(prefix_path, LINK_CACHE)
-    event_cache_filepath = os.path.expanduser(EVENT_CACHE)
 
     def get_resource(
         res: Any,
@@ -365,8 +408,6 @@ def main():
 
     elif action == "assignments":
         link_cache = read_cache(link_cache_filepath)
-        if args.gcalendar:
-            event_cache = read_cache(event_cache_filepath)
         # Get assignment data from server
         assignments = moodle.server(ServerFunctions.ASSIGNMENTS)
 
@@ -437,53 +478,12 @@ def main():
 
                 # Write event to calendar
                 if args.gcalendar and due:
-                    # Put deadline at the *end* of the event
-                    startdate = duedate - timedelta(hours=1)
-                    start_time = startdate.isoformat()
-                    end_time = duedate.isoformat()
-                    event_name = f"{course_name} - {name}"
-                    if str(assignment_id) not in event_cache:
-                        # Create and push a new event
-                        event = create_event(
-                            event_name, detail, start_time, end_time, False
-                        )
-                        added_event = (
-                            service.events()
-                            .insert(calendarId=gcal_calendar_id, body=event)
-                            .execute()
-                        )
-                        event_id = added_event["id"]
-                        event_cache[assignment_id] = event_id
-                        print(f"        Added event to calendar.")
-                    else:
-                        # Update event if necessary
-                        event = (
-                            service.events()
-                            .get(
-                                calendarId=gcal_calendar_id,
-                                eventId=event_cache[str(assignment_id)],
-                            )
-                            .execute()
-                        )
-                        if event["start"]["dateTime"] != (start_time + "+05:30"):
-                            event["start"]["dateTime"] = start_time
-                            event["end"]["dateTime"] = end_time
-                            updated_event = (
-                                service.events()
-                                .update(
-                                    calendarId=gcal_calendar_id,
-                                    eventId=event["id"],
-                                    body=event,
-                                )
-                                .execute()
-                            )
-                            event_cache[assignment_id] = updated_event["id"]
-                            print(f"        Updated event in calendar.")
+                    publish_gcal_event(
+                        config, duedate, course_name, name, assignment_id, detail
+                    )
                 print()
 
         write_cache(link_cache_filepath, link_cache)
-        if args.gcalendar:
-            write_cache(event_cache_filepath, event_cache)
         sys.exit(0)
 
     elif action == "urls":
