@@ -2,7 +2,7 @@ from moodlews.service import MoodleClient, ServerFunctions
 
 from argparse import Namespace
 from configparser import RawConfigParser
-from typing import Tuple
+from typing import Tuple, List
 
 import errno
 import getpass
@@ -71,7 +71,7 @@ def get_credentials(config: RawConfigParser) -> Tuple[str, str]:
     return username, password
 
 
-def get_all_courses(config: RawConfigParser) -> list[str]:
+def get_all_courses(config: RawConfigParser) -> List[str]:
     """Also extract the list of `ALL` courses"""
     try:
         all_courses = list(config["courses"].keys())
@@ -83,7 +83,7 @@ def get_all_courses(config: RawConfigParser) -> list[str]:
     return all_courses
 
 
-def resolve_ignore_types(config: RawConfigParser, args: Namespace) -> list[str]:
+def resolve_ignore_types(config: RawConfigParser, args: Namespace) -> List[str]:
     # Read ignore types from config
     ignore_types = []
     try:

@@ -1,7 +1,7 @@
 from moodlews.service import MoodleClient
 
 from argparse import Namespace
-from typing import Any
+from typing import Any, Dict, List
 
 import json
 import os
@@ -26,7 +26,7 @@ def write_cache(filepath: str, cache: dict) -> None:
 
 def create_event(
     name: str, description: str, start: str, end: str, reminders: bool = True
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Format and create a calendar event"""
     newevent = {
         "summary": name,
@@ -45,7 +45,7 @@ def create_event(
 def get_resource(
     args: Namespace,
     moodle: MoodleClient,
-    ignore_types: list[str],
+    ignore_types: List[str],
     res: Any,
     prefix: str,
     course: str,

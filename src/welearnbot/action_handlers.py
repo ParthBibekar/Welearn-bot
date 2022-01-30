@@ -1,6 +1,7 @@
 from argparse import Namespace
 from configparser import RawConfigParser
 import sys
+from typing import List
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
 
@@ -36,7 +37,7 @@ def handle_assignments(
     args: Namespace,
     config: RawConfigParser,
     moodle: MoodleClient,
-    ignore_types: list[str],
+    ignore_types: List[str],
     prefix_path: str,
     link_cache_filepath: str,
     token: str,
@@ -165,7 +166,7 @@ def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
 def handle_files(
     args: Namespace,
     moodle: MoodleClient,
-    ignore_types: list[str],
+    ignore_types: List[str],
     prefix_path: str,
     link_cache_filepath: str,
     token: str,
