@@ -2,7 +2,6 @@ from requests import Session
 import urllib.parse
 import json
 
-
 class ServerFunctions:
     SITE_INFO = "core_webservice_get_site_info"
     ALL_COURSES = "core_course_get_courses_by_field"
@@ -13,7 +12,6 @@ class ServerFunctions:
     URLS = "mod_url_get_urls_by_courses"
     RESOURCES = "mod_resource_get_resources_by_courses"
 
-
 class MoodleClient:
     def __init__(self, baseurl):
         self.baseurl = baseurl
@@ -23,8 +21,7 @@ class MoodleClient:
         self.token = ""
 
     def response(self, url, **data):
-        tokenized_data = {"token": self.token, **data}
-        return self.session.post(url, tokenized_data)
+        return self.session.post(url, data)
 
     def response_json(self, url, **data):
         response = self.response(url, **data)
