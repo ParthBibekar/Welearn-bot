@@ -130,6 +130,8 @@ def resolve_prefix_path(config: RawConfigParser, args: Namespace) -> str:
             print(prefix_path, "does not exist!")
             sys.exit(errno.ENOTDIR)
 
+    return prefix_path
+
 
 def get_courses_by_id(moodle: MoodleClient, args: Namespace):
     # Get a list of all courses
