@@ -2,293 +2,20 @@
 
 from moodlews.service import MoodleClient
 from moodlews.service import ServerFunctions
-from welearnbot.constants import BASEURL, EVENT_CACHE, LINK_CACHE
-from welearnbot.parser import setup_parser
 
-from typing import Any, Tuple
-from argparse import Namespace
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+from welearnbot.constants import BASEURL, LINK_CACHE
+from welearnbot.gcal import publish_gcal_event
+from welearnbot.parser import setup_parser
+from welearnbot.utils import read_cache, write_cache
+from welearnbot import resolvers
+
+from typing import Any
 
 from bs4 import BeautifulSoup as bs
-from configparser import RawConfigParser
 from datetime import datetime
-from datetime import timedelta
-from sys import platform
 import os, sys
 import errno
-import json
-import getpass
 import mimetypes
-
-
-def read_cache(filepath: str) -> dict:
-    """Read from a cache file
-    """
-    cache = dict()
-    if os.path.exists(filepath):
-        with open(filepath) as cache_file:
-            cache = json.load(cache_file)
-    return cache
-
-
-def write_cache(filepath: str, cache: dict) -> None:
-    """Update cache file"""
-    with open(filepath, "w") as cache_file:
-        json.dump(cache, cache_file)
-
-
-def create_event(
-    name: str, description: str, start: str, end: str, reminders: bool = True
-) -> dict[str, Any]:
-    """Format and create a calendar event"""
-    newevent = {
-        "summary": name,
-        "location": "",
-        "description": description,
-        "start": {"dateTime": start, "timeZone": "Asia/Kolkata",},
-        "end": {"dateTime": end, "timeZone": "Asia/Kolkata",},
-        "reminders": {
-            "useDefault": reminders,
-            "overrides": [{"method": "popup", "minutes": 10},],
-        },
-    }
-    return newevent
-
-
-def resolve_action_mode(args: Namespace) -> str:
-    # Get the mode
-    action = ""
-    if "files".startswith(args.action[0]):
-        action = "files"
-    elif "assignments".startswith(args.action[0]):
-        action = "assignments"
-    elif "urls".startswith(args.action[0]):
-        action = "urls"
-    elif "courses".startswith(args.action[0]):
-        action = "courses"
-    elif "whoami".startswith(args.action[0]):
-        action = "whoami"
-    else:
-        print("Invalid action! Use the -h flag for usage.")
-        sys.exit(errno.EPERM)
-
-    if args.dueassignments and action != "assignments":
-        print(
-            "Can only use --dueassignments with 'assignments' action! Use the -h flag for usage."
-        )
-        sys.exit(errno.EPERM)
-    if args.gcalendar and action != "assignments":
-        print(
-            "Can only use --gcalendar with 'assignments' action! Use the -h flag for usage."
-        )
-        sys.exit(errno.EPERM)
-    return action
-
-
-def get_config() -> RawConfigParser:
-    """Read the .welearnrc file from the home directory, and extract username and password"""
-    if platform == "linux" or platform == "linux2":
-        configfile = os.path.expanduser("~/.welearnrc")
-    elif platform == "darwin":
-        configfile = os.path.expanduser("~/.welearnrc")
-    elif platform == "win32":
-        configfile = os.path.expanduser("~/welearn.ini")
-
-    config = RawConfigParser(allow_no_value=True)
-    config.read(configfile)
-
-    return config
-
-
-def get_credentials(config: RawConfigParser) -> Tuple[str, str]:
-    username = ""
-    password = ""
-
-    try:
-        username = config["auth"]["username"]
-    except KeyError:
-        username = input("Username : ")
-    try:
-        password = config["auth"]["password"]
-    except KeyError:
-        password = getpass.getpass("Password : ", stream=None)
-
-    return username, password
-
-
-def get_all_courses(config: RawConfigParser) -> list[str]:
-    """Also extract the list of `ALL` courses"""
-    try:
-        all_courses = list(config["courses"].keys())
-    except KeyError:
-        all_courses = []
-    all_courses = map(str.strip, all_courses)
-    all_courses = map(str.upper, all_courses)
-    all_courses = list(all_courses)
-    return all_courses
-
-
-def resolve_ignore_types(config: RawConfigParser, args: Namespace) -> list[str]:
-    # Read ignore types from config
-    ignore_types = []
-    try:
-        ignores = config["files"]["ignore"]
-        ignore_types = ignores.split(",")
-    except KeyError:
-        ignore_types = []
-
-    # Override config with options
-    if args.ignoretypes:
-        ignore_types = args.ignoretypes
-
-    # Override ignore with force
-    if args.forcedownload:
-        ignore_types = []
-
-    ignore_types = map(str.strip, ignore_types)
-    ignore_types = map(str.upper, ignore_types)
-    ignore_types = list(ignore_types)
-
-    return ignore_types
-
-
-def resolve_prefix_path(config: RawConfigParser, args: Namespace) -> str:
-    # Read pathprefix from config
-    try:
-        prefix_path = os.path.expanduser(config["files"]["pathprefix"])
-        prefix_path = os.path.abspath(prefix_path)
-        if not os.path.isdir(prefix_path):
-            print(
-                prefix_path,
-                "does not exist! Please create an empty directory ",
-                prefix_path,
-            )
-            sys.exit(errno.ENOTDIR)
-    except KeyError:
-        prefix_path = ""
-
-    # Override pathprefix config if -p flag is used
-    if args.pathprefix:
-        prefix_path = os.path.expanduser(args.pathprefix[0])
-        prefix_path = os.path.abspath(prefix_path)
-        if not os.path.isdir(prefix_path):
-            print(prefix_path, "does not exist!")
-            sys.exit(errno.ENOTDIR)
-
-
-def setup_gcal(config: RawConfigParser) -> Tuple[str, Any]:
-    """Handle Google Calender
-
-    Returns
-    -------
-    gcal_calendar_id: str
-    service: Any
-    """
-    try:
-        OAUTH_CLIENT_ID = config["gcal"]["client_id"]
-        OAUTH_CLIENT_SECRET = config["gcal"]["client_secret"]
-
-        gcal_client_config = {
-            "installed": {
-                "client_id": OAUTH_CLIENT_ID,
-                "client_secret": OAUTH_CLIENT_SECRET,
-                "redirect_uris": ["http://localhost", "urn:ietf:wg:oauth:2.0:oob"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://accounts.google.com/o/oauth2/token",
-            }
-        }
-    except KeyError:
-        print("Invalid configuration!")
-        sys.exit(errno.ENODATA)
-
-    try:
-        gcal_calendar_id = config["gcal"]["calendar_id"]
-    except KeyError:
-        gcal_calendar_id = "primary"
-
-    # Connect to the Google Calendar API
-    SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
-    creds = None
-    gcal_token_path = os.path.expanduser("~/.gcal_token")
-    if os.path.exists(gcal_token_path):
-        creds = Credentials.from_authorized_user_file(gcal_token_path, SCOPES)
-    # If there are no valid credentials, login
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_config(gcal_client_config, SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open(gcal_token_path, "w") as gcal_token:
-            gcal_token.write(creds.to_json())
-    service = build("calendar", "v3", credentials=creds)
-
-    return gcal_calendar_id, service
-
-
-def publish_gcal_event(
-    config: RawConfigParser,
-    duedate: datetime,
-    course_name: str,
-    name: str,
-    assignment_id: int,
-    detail: str,
-) -> None:
-    event_cache_filepath = os.path.expanduser(EVENT_CACHE)
-    event_cache = read_cache(event_cache_filepath)
-
-    # Put deadline at the *end* of the event
-    startdate = duedate - timedelta(hours=1)
-    start_time = startdate.isoformat()
-    end_time = duedate.isoformat()
-    event_name = f"{course_name} - {name}"
-
-    gcal_calendar_id, service = setup_gcal(config)
-
-    if str(assignment_id) not in event_cache:
-        # Create and push a new event
-        event = create_event(event_name, detail, start_time, end_time, False)
-        added_event = (
-            service.events().insert(calendarId=gcal_calendar_id, body=event).execute()
-        )
-        event_id = added_event["id"]
-        event_cache[assignment_id] = event_id
-        print(f"        Added event to calendar.")
-    else:
-        # Update event if necessary
-        event = (
-            service.events()
-            .get(calendarId=gcal_calendar_id, eventId=event_cache[str(assignment_id)],)
-            .execute()
-        )
-        if event["start"]["dateTime"] != (start_time + "+05:30"):
-            event["start"]["dateTime"] = start_time
-            event["end"]["dateTime"] = end_time
-            updated_event = (
-                service.events()
-                .update(calendarId=gcal_calendar_id, eventId=event["id"], body=event,)
-                .execute()
-            )
-            event_cache[assignment_id] = updated_event["id"]
-            print(f"        Updated event in calendar.")
-    write_cache(event_cache_filepath, event_cache)
-
-
-def get_courses_by_id(moodle: MoodleClient, args: Namespace):
-    # Get a list of all courses
-    courses = moodle.server(ServerFunctions.ALL_COURSES)
-
-    # Create a dictionary of course ids versus course names
-    course_ids = dict()
-    for course in courses["courses"]:
-        course_name = course["shortname"]
-        if course_name in args.courses:
-            course_ids[course["id"]] = course_name
-    return course_ids
 
 
 def handle_whoami(moodle: MoodleClient) -> None:
@@ -318,18 +45,18 @@ def main():
     parser = setup_parser()
     args = parser.parse_args()
 
-    action = resolve_action_mode(args)
+    action = resolvers.resolve_action_mode(args)
 
-    config = get_config()
-    username, password = get_credentials(config)
+    config = resolvers.get_config()
+    username, password = resolvers.get_credentials(config)
 
     # Select all courses from config if `ALL` keyword is used
     if "ALL" in map(str.upper, args.courses):
-        args.courses = get_all_courses(config)
+        args.courses = resolvers.get_all_courses(config)
 
-    ignore_types = resolve_ignore_types(config, args)
+    ignore_types = resolvers.resolve_ignore_types(config, args)
 
-    prefix_path = resolve_prefix_path(config, args)
+    prefix_path = resolvers.resolve_prefix_path(config, args)
     # Login to WeLearn with supplied credentials
     moodle = MoodleClient(BASEURL)
     token = moodle.authenticate(username, password)
@@ -487,7 +214,7 @@ def main():
         sys.exit(0)
 
     elif action == "urls":
-        course_ids = get_courses_by_id(moodle, args)
+        course_ids = resolvers.get_courses_by_id(moodle, args)
 
         # Get a list of available urls
         urls = moodle.server(ServerFunctions.URLS)
@@ -521,7 +248,7 @@ def main():
 
     elif action == "files":
         link_cache = read_cache(link_cache_filepath)
-        course_ids = get_courses_by_id(moodle, args)
+        course_ids = resolvers.get_courses_by_id(moodle, args)
 
         # Iterate through each course, and fetch all modules
         for courseid in course_ids:
