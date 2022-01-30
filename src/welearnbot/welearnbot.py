@@ -52,7 +52,7 @@ def get_resource(
     cache: dict,
     subfolder: str = "",
     indent: int = 0,
-):
+) -> None:
     """Helper function to retrieve a file/resource from the server"""
     filename = res["filename"]
     course_dir = os.path.join(prefix, course, subfolder)
@@ -199,6 +199,86 @@ def handle_assignments(
     sys.exit(0)
 
 
+def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
+    course_ids = resolvers.get_courses_by_id(moodle, args)
+
+    # Get a list of available urls
+    urls = moodle.server(ServerFunctions.URLS)
+
+    # Iterate through all urls, and build a dictionary
+    url_list = dict()
+    for url in urls["urls"]:
+        if url["course"] in course_ids:
+            course_name = course_ids[url["course"]]
+            if not course_name in url_list:
+                url_list[course_name] = []
+            url_list[course_name].append(url)
+
+    # Display all urls
+    for course_name in args.courses:
+        if not course_name in url_list:
+            continue
+        no_url = True
+        for url in url_list[course_name]:
+            if no_url:
+                print(course_name)
+            no_url = False
+            url_name = url["name"]
+            url_detail = bs(url["intro"], "html.parser").text
+            url_link = url["externalurl"]
+            print(f"    {url_name} - {url_detail}")
+            print(f"        Link : {url_link}")
+            print()
+        print()
+    sys.exit(0)
+
+
+def handle_files(
+    args: Namespace,
+    moodle: MoodleClient,
+    ignore_types: list[str],
+    prefix_path: str,
+    link_cache_filepath: str,
+) -> None:
+    link_cache = read_cache(link_cache_filepath)
+    course_ids = resolvers.get_courses_by_id(moodle, args)
+
+    # Iterate through each course, and fetch all modules
+    for courseid in course_ids:
+        course_name = course_ids[courseid]
+        page = moodle.server(ServerFunctions.COURSE_CONTENTS, courseid=courseid)
+        for item in page:
+            modules = item.get("modules", [])
+            for module in modules:
+                modname = module.get("modname", "")
+                if modname == "resource":
+                    for resource in module["contents"]:
+                        get_resource(
+                            args,
+                            moodle,
+                            ignore_types,
+                            resource,
+                            prefix_path,
+                            course_name,
+                            link_cache,
+                        )
+                elif modname == "folder":
+                    folder_name = module.get("name", "")
+                    for resource in module["contents"]:
+                        get_resource(
+                            args,
+                            moodle,
+                            ignore_types,
+                            resource,
+                            prefix_path,
+                            course_name,
+                            link_cache,
+                            subfolder=folder_name,
+                        )
+
+    write_cache(link_cache_filepath, link_cache)
+
+
 def main():
     # Get command line options
     parser = setup_parser()
@@ -239,76 +319,10 @@ def main():
         )
 
     elif action == "urls":
-        course_ids = resolvers.get_courses_by_id(moodle, args)
-
-        # Get a list of available urls
-        urls = moodle.server(ServerFunctions.URLS)
-
-        # Iterate through all urls, and build a dictionary
-        url_list = dict()
-        for url in urls["urls"]:
-            if url["course"] in course_ids:
-                course_name = course_ids[url["course"]]
-                if not course_name in url_list:
-                    url_list[course_name] = []
-                url_list[course_name].append(url)
-
-        # Display all urls
-        for course_name in args.courses:
-            if not course_name in url_list:
-                continue
-            no_url = True
-            for url in url_list[course_name]:
-                if no_url:
-                    print(course_name)
-                no_url = False
-                url_name = url["name"]
-                url_detail = bs(url["intro"], "html.parser").text
-                url_link = url["externalurl"]
-                print(f"    {url_name} - {url_detail}")
-                print(f"        Link : {url_link}")
-                print()
-            print()
-        sys.exit(0)
+        handle_urls(args, moodle)
 
     elif action == "files":
-        link_cache = read_cache(link_cache_filepath)
-        course_ids = resolvers.get_courses_by_id(moodle, args)
-
-        # Iterate through each course, and fetch all modules
-        for courseid in course_ids:
-            course_name = course_ids[courseid]
-            page = moodle.server(ServerFunctions.COURSE_CONTENTS, courseid=courseid)
-            for item in page:
-                modules = item.get("modules", [])
-                for module in modules:
-                    modname = module.get("modname", "")
-                    if modname == "resource":
-                        for resource in module["contents"]:
-                            get_resource(
-                                args,
-                                moodle,
-                                ignore_types,
-                                resource,
-                                prefix_path,
-                                course_name,
-                                link_cache,
-                            )
-                    elif modname == "folder":
-                        folder_name = module.get("name", "")
-                        for resource in module["contents"]:
-                            get_resource(
-                                args,
-                                moodle,
-                                ignore_types,
-                                resource,
-                                prefix_path,
-                                course_name,
-                                link_cache,
-                                subfolder=folder_name,
-                            )
-
-        write_cache(link_cache_filepath, link_cache)
+        handle_files(args, moodle, ignore_types, prefix_path, link_cache_filepath)
 
 
 if __name__ == "__main__":
