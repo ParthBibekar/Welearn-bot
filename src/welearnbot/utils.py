@@ -1,7 +1,11 @@
+from moodlews.service import MoodleClient
+
+from argparse import Namespace
 from typing import Any
 
 import json
 import os
+import mimetypes
 
 
 def read_cache(filepath: str) -> dict:
@@ -36,4 +40,67 @@ def create_event(
         },
     }
     return newevent
+
+
+def get_resource(
+    args: Namespace,
+    moodle: MoodleClient,
+    ignore_types: list[str],
+    res: Any,
+    prefix: str,
+    course: str,
+    cache: dict,
+    subfolder: str = "",
+    indent: int = 0,
+) -> None:
+    """Helper function to retrieve a file/resource from the server"""
+    filename = res["filename"]
+    course_dir = os.path.join(prefix, course, subfolder)
+    fileurl = res["fileurl"]
+    _, extension = os.path.splitext(filename)
+    extension = str.upper(extension[1:])
+    if extension == "":
+        # Missing extension - guess on the basis of the mimetype
+        extension = mimetypes.guess_extension(res["mimetype"])
+        filename += extension
+        extension = extension[1:]
+    filepath = os.path.join(course_dir, filename)
+    short_filepath = os.path.join(course, subfolder, filename)
+    timemodified = int(res["timemodified"])
+
+    # Only download if forced, or not already downloaded
+    if not args.forcedownload and fileurl in cache:
+        cache_time = int(cache[fileurl])
+        # Check where the latest version of the file is in cache
+        if timemodified == cache_time:
+            if os.path.exists(filepath):
+                return
+            if not args.missingdownload and not os.path.exists(filepath):
+                print(" " * indent + "Missing     " + short_filepath)
+                print(
+                    " " * indent
+                    + "    (previously downloaded but deleted/moved from download location, perhaps try --missingdownload)"
+                )
+                return
+
+    # Ignore files with specified extensions
+    if extension in ignore_types:
+        print(" " * indent + "Ignoring    " + short_filepath)
+        return
+
+    # Create the course folder if not already existing
+    if not os.path.exists(course_dir):
+        os.makedirs(course_dir)
+
+    # Download the file and write to the folder
+    print(
+        " " * indent + "Downloading " + short_filepath, end="", flush=True,
+    )
+    response = moodle.response(fileurl)
+    with open(filepath, "wb") as download:
+        download.write(response.content)
+    print(" ... DONE")
+
+    # Add the file url to the cache
+    cache[fileurl] = timemodified
 
