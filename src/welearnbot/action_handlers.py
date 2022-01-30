@@ -61,7 +61,7 @@ def handle_assignments(
             # Calculate whether the due date is in the future
             due = duedelta.total_seconds() > 0
             if args.dueassignments and not due:
-                return
+                continue
             no_assignments = False
             if not no_assignments:
                 print(course_name)
@@ -112,7 +112,7 @@ def handle_assignments(
                                         f"        Submission     : {filename} ({submission_date_str})"
                                     )
             except KeyError:
-                return
+                continue
             if not submission_made:
                 print(f"        Submission     : NONE")
 
