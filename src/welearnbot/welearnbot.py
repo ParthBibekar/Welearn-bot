@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from argparse import Namespace
+from configparser import RawConfigParser
 from moodlews.service import MoodleClient
 from moodlews.service import ServerFunctions
 
@@ -40,6 +42,147 @@ def handle_courses(moodle: MoodleClient) -> None:
         sys.exit(0)
 
 
+def get_resource(
+    args: Namespace,
+    moodle: MoodleClient,
+    ignore_types: list[str],
+    res: Any,
+    prefix: str,
+    course: str,
+    cache: dict,
+    subfolder: str = "",
+    indent: int = 0,
+):
+    """Helper function to retrieve a file/resource from the server"""
+    filename = res["filename"]
+    course_dir = os.path.join(prefix, course, subfolder)
+    fileurl = res["fileurl"]
+    _, extension = os.path.splitext(filename)
+    extension = str.upper(extension[1:])
+    if extension == "":
+        # Missing extension - guess on the basis of the mimetype
+        extension = mimetypes.guess_extension(res["mimetype"])
+        filename += extension
+        extension = extension[1:]
+    filepath = os.path.join(course_dir, filename)
+    short_filepath = os.path.join(course, subfolder, filename)
+    timemodified = int(res["timemodified"])
+
+    # Only download if forced, or not already downloaded
+    if not args.forcedownload and fileurl in cache:
+        cache_time = int(cache[fileurl])
+        # Check where the latest version of the file is in cache
+        if timemodified == cache_time:
+            if os.path.exists(filepath):
+                return
+            if not args.missingdownload and not os.path.exists(filepath):
+                print(" " * indent + "Missing     " + short_filepath)
+                print(
+                    " " * indent
+                    + "    (previously downloaded but deleted/moved from download location, perhaps try --missingdownload)"
+                )
+                return
+
+    # Ignore files with specified extensions
+    if extension in ignore_types:
+        print(" " * indent + "Ignoring    " + short_filepath)
+        return
+
+    # Create the course folder if not already existing
+    if not os.path.exists(course_dir):
+        os.makedirs(course_dir)
+
+    # Download the file and write to the folder
+    print(
+        " " * indent + "Downloading " + short_filepath, end="", flush=True,
+    )
+    response = moodle.response(fileurl)
+    with open(filepath, "wb") as download:
+        download.write(response.content)
+    print(" ... DONE")
+
+    # Add the file url to the cache
+    cache[fileurl] = timemodified
+
+
+def handle_assignment(
+    args: Namespace,
+    config: RawConfigParser,
+    moodle: MoodleClient,
+    ignore_types: list[str],
+    assignment: Any,
+    course_name: str,
+    prefix_path: str,
+    link_cache: dict,
+) -> None:
+    # Get the assignment name, details, due date, and relative due date
+    assignment_id = assignment["id"]
+    name = assignment["name"]
+    duedate = datetime.fromtimestamp(int(assignment["duedate"]))
+    due_str = duedate.strftime("%a %d %b, %Y, %H:%M:%S")
+    duedelta = duedate - datetime.now()
+    # Calculate whether the due date is in the future
+    due = duedelta.total_seconds() > 0
+    if args.dueassignments and not due:
+        return
+    no_assignments = False
+    if not no_assignments:
+        print(course_name)
+    # Show assignment details
+    duedelta_str = f"{abs(duedelta.days)} days, {duedelta.seconds // 3600} hours"
+    detail = bs(assignment["intro"], "html.parser").text
+    print(f"    {name} - {detail}")
+    for attachment in assignment["introattachments"]:
+        print(f"        Attachment     : {attachment['filename']}")
+        get_resource(
+            args,
+            moodle,
+            ignore_types,
+            attachment,
+            prefix_path,
+            course_name,
+            link_cache,
+            indent=8,
+        )
+    if due:
+        print(f"        Due on         : {due_str}")
+        print(f"        Time remaining : {duedelta_str}")
+    else:
+        print(f"        Due on         : {due_str} ({duedelta_str} ago)")
+
+    # Get submission details
+    submission = moodle.server(
+        ServerFunctions.ASSIGNMENT_STATUS, assignid=assignment_id
+    )
+    submission_made = False
+    try:
+        for plugin in submission["lastattempt"]["submission"]["plugins"]:
+            if plugin["name"] == "File submissions":
+                for filearea in plugin["fileareas"]:
+                    if filearea["area"] == "submission_files":
+                        for submitted_file in filearea["files"]:
+                            submission_made = True
+                            filename = submitted_file["filename"]
+                            submission_date = datetime.fromtimestamp(
+                                int(submitted_file["timemodified"])
+                            )
+                            submission_date_str = submission_date.strftime(
+                                "%a %d %b, %Y, %H:%M:%S"
+                            )
+                            print(
+                                f"        Submission     : {filename} ({submission_date_str})"
+                            )
+    except KeyError:
+        return
+    if not submission_made:
+        print(f"        Submission     : NONE")
+
+    # Write event to calendar
+    if args.gcalendar and due:
+        publish_gcal_event(config, duedate, course_name, name, assignment_id, detail)
+    print()
+
+
 def main():
     # Get command line options
     parser = setup_parser()
@@ -67,65 +210,6 @@ def main():
     # Store cache file paths
     link_cache_filepath = os.path.join(prefix_path, LINK_CACHE)
 
-    def get_resource(
-        res: Any,
-        prefix: str,
-        course: str,
-        cache: dict,
-        subfolder: str = "",
-        indent: int = 0,
-    ):
-        """Helper function to retrieve a file/resource from the server"""
-        filename = res["filename"]
-        course_dir = os.path.join(prefix, course, subfolder)
-        fileurl = res["fileurl"]
-        _, extension = os.path.splitext(filename)
-        extension = str.upper(extension[1:])
-        if extension == "":
-            # Missing extension - guess on the basis of the mimetype
-            extension = mimetypes.guess_extension(res["mimetype"])
-            filename += extension
-            extension = extension[1:]
-        filepath = os.path.join(course_dir, filename)
-        short_filepath = os.path.join(course, subfolder, filename)
-        timemodified = int(res["timemodified"])
-
-        # Only download if forced, or not already downloaded
-        if not args.forcedownload and fileurl in cache:
-            cache_time = int(cache[fileurl])
-            # Check where the latest version of the file is in cache
-            if timemodified == cache_time:
-                if os.path.exists(filepath):
-                    return
-                if not args.missingdownload and not os.path.exists(filepath):
-                    print(" " * indent + "Missing     " + short_filepath)
-                    print(
-                        " " * indent
-                        + "    (previously downloaded but deleted/moved from download location, perhaps try --missingdownload)"
-                    )
-                    return
-
-        # Ignore files with specified extensions
-        if extension in ignore_types:
-            print(" " * indent + "Ignoring    " + short_filepath)
-            return
-
-        # Create the course folder if not already existing
-        if not os.path.exists(course_dir):
-            os.makedirs(course_dir)
-
-        # Download the file and write to the folder
-        print(
-            " " * indent + "Downloading " + short_filepath, end="", flush=True,
-        )
-        response = moodle.response(fileurl, token=token)
-        with open(filepath, "wb") as download:
-            download.write(response.content)
-        print(" ... DONE")
-
-        # Add the file url to the cache
-        cache[fileurl] = timemodified
-
     # Action picker
     if action == "whoami":
         handle_whoami(moodle)
@@ -146,69 +230,16 @@ def main():
                 continue
             no_assignments = True
             for assignment in course["assignments"]:
-                # Get the assignment name, details, due date, and relative due date
-                assignment_id = assignment["id"]
-                name = assignment["name"]
-                duedate = datetime.fromtimestamp(int(assignment["duedate"]))
-                due_str = duedate.strftime("%a %d %b, %Y, %H:%M:%S")
-                duedelta = duedate - datetime.now()
-                # Calculate whether the due date is in the future
-                due = duedelta.total_seconds() > 0
-                if args.dueassignments and not due:
-                    continue
-                no_assignments = False
-                if not no_assignments:
-                    print(course_name)
-                # Show assignment details
-                duedelta_str = (
-                    f"{abs(duedelta.days)} days, {duedelta.seconds // 3600} hours"
+                handle_assignment(
+                    args,
+                    config,
+                    moodle,
+                    ignore_types,
+                    assignment,
+                    course_name,
+                    prefix_path,
+                    link_cache,
                 )
-                detail = bs(assignment["intro"], "html.parser").text
-                print(f"    {name} - {detail}")
-                for attachment in assignment["introattachments"]:
-                    print(f"        Attachment     : {attachment['filename']}")
-                    get_resource(
-                        attachment, prefix_path, course_name, link_cache, indent=8
-                    )
-                if due:
-                    print(f"        Due on         : {due_str}")
-                    print(f"        Time remaining : {duedelta_str}")
-                else:
-                    print(f"        Due on         : {due_str} ({duedelta_str} ago)")
-
-                # Get submission details
-                submission = moodle.server(
-                    ServerFunctions.ASSIGNMENT_STATUS, assignid=assignment_id
-                )
-                submission_made = False
-                try:
-                    for plugin in submission["lastattempt"]["submission"]["plugins"]:
-                        if plugin["name"] == "File submissions":
-                            for filearea in plugin["fileareas"]:
-                                if filearea["area"] == "submission_files":
-                                    for submitted_file in filearea["files"]:
-                                        submission_made = True
-                                        filename = submitted_file["filename"]
-                                        submission_date = datetime.fromtimestamp(
-                                            int(submitted_file["timemodified"])
-                                        )
-                                        submission_date_str = submission_date.strftime(
-                                            "%a %d %b, %Y, %H:%M:%S"
-                                        )
-                                        print(
-                                            f"        Submission     : {filename} ({submission_date_str})"
-                                        )
-                except KeyError:
-                    continue
-                if not submission_made:
-                    print(f"        Submission     : NONE")
-
-                # Write event to calendar
-                if args.gcalendar and due:
-                    publish_gcal_event(
-                        config, duedate, course_name, name, assignment_id, detail
-                    )
-                print()
 
         write_cache(link_cache_filepath, link_cache)
         sys.exit(0)
@@ -260,11 +291,22 @@ def main():
                     modname = module.get("modname", "")
                     if modname == "resource":
                         for resource in module["contents"]:
-                            get_resource(resource, prefix_path, course_name, link_cache)
+                            get_resource(
+                                args,
+                                moodle,
+                                ignore_types,
+                                resource,
+                                prefix_path,
+                                course_name,
+                                link_cache,
+                            )
                     elif modname == "folder":
                         folder_name = module.get("name", "")
                         for resource in module["contents"]:
                             get_resource(
+                                args,
+                                moodle,
+                                ignore_types,
                                 resource,
                                 prefix_path,
                                 course_name,
