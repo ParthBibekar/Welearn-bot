@@ -50,7 +50,6 @@ def get_resource(
     prefix: str,
     course: str,
     cache: dict,
-    token: str,
     subfolder: str = "",
     indent: int = 0,
 ) -> None:
@@ -97,7 +96,7 @@ def get_resource(
     print(
         " " * indent + "Downloading " + short_filepath, end="", flush=True,
     )
-    response = moodle.response(fileurl, token=token)
+    response = moodle.response(fileurl)
     with open(filepath, "wb") as download:
         download.write(response.content)
     print(" ... DONE")
