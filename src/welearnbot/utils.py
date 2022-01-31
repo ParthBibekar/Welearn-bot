@@ -1,7 +1,7 @@
 from moodlews.service import MoodleClient
 
 from argparse import Namespace
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import json
 import os
@@ -9,8 +9,7 @@ import mimetypes
 
 
 def read_cache(filepath: str) -> dict:
-    """Read from a cache file
-    """
+    """Read from a cache file"""
     cache = dict()
     if os.path.exists(filepath):
         with open(filepath) as cache_file:
@@ -32,11 +31,19 @@ def create_event(
         "summary": name,
         "location": "",
         "description": description,
-        "start": {"dateTime": start, "timeZone": "Asia/Kolkata",},
-        "end": {"dateTime": end, "timeZone": "Asia/Kolkata",},
+        "start": {
+            "dateTime": start,
+            "timeZone": "Asia/Kolkata",
+        },
+        "end": {
+            "dateTime": end,
+            "timeZone": "Asia/Kolkata",
+        },
         "reminders": {
             "useDefault": reminders,
-            "overrides": [{"method": "popup", "minutes": 10},],
+            "overrides": [
+                {"method": "popup", "minutes": 10},
+            ],
         },
     }
     return newevent
@@ -53,7 +60,7 @@ def get_resource(
     token: str,
     subfolder: str = "",
     indent: int = 0,
-) -> None:
+) -> Tuple[str, str]:
     """Helper function to retrieve a file/resource from the server"""
     filename = res["filename"]
     course_dir = os.path.join(prefix, course, subfolder)
@@ -75,19 +82,13 @@ def get_resource(
         # Check where the latest version of the file is in cache
         if timemodified == cache_time:
             if os.path.exists(filepath):
-                return
+                return "EXISTS", short_filepath
             if not args.missingdownload and not os.path.exists(filepath):
-                print(" " * indent + "Missing     " + short_filepath)
-                print(
-                    " " * indent
-                    + "    (previously downloaded but deleted/moved from download location, perhaps try --missingdownload)"
-                )
-                return
+                return "MISSING", short_filepath
 
     # Ignore files with specified extensions
     if extension in ignore_types:
-        print(" " * indent + "Ignoring    " + short_filepath)
-        return
+        return "IGNORE", short_filepath
 
     # Create the course folder if not already existing
     if not os.path.exists(course_dir):
@@ -95,7 +96,9 @@ def get_resource(
 
     # Download the file and write to the folder
     print(
-        " " * indent + "Downloading " + short_filepath, end="", flush=True,
+        " " * indent + "Downloading " + short_filepath,
+        end="",
+        flush=True,
     )
     response = moodle.response(fileurl, token=token)
     with open(filepath, "wb") as download:
@@ -104,4 +107,54 @@ def get_resource(
 
     # Add the file url to the cache
     cache[fileurl] = timemodified
+    return "DOWNLOADED", short_filepath
 
+
+def show_file_statuses(file_statuses, verbose=False) -> None:
+    """Helper function to print ignored, missing files"""
+    ignored = []
+    missing = []
+    downloaded = []
+    for status, short_filepath in file_statuses:
+        if status == "IGNORE":
+            ignored.append(short_filepath)
+        elif status == "MISSING":
+            missing.append(short_filepath)
+        elif status == "DOWNLOADED":
+            downloaded.append(short_filepath)
+
+    if len(ignored) > 0:
+        if len(downloaded) > 0:
+            print()
+        if verbose:
+            print("The following files have been ignored.")
+            for short_filepath in ignored:
+                print("    " + short_filepath)
+        else:
+            if len(ignored) == 1:
+                print("1 file has been ignored, use --verbose for more info")
+            else:
+                print(
+                    "{} files have been ignored, use --verbose for more info".format(
+                        len(ignored)
+                    )
+                )
+
+    if len(missing) > 0:
+        if len(ignored) > 0 or len(downloaded) > 0:
+            print()
+        if verbose:
+            print(
+                "The following files are missing, use --missingdownload to download them."
+            )
+            for short_filepath in missing:
+                print("    " + short_filepath)
+        else:
+            if len(missing) == 1:
+                print("1 file is missing, use --verbose for more info")
+            else:
+                print(
+                    "{} files are missing, use --verbose for more info".format(
+                        len(missing)
+                    )
+                )
