@@ -26,6 +26,11 @@ def setup_parser() -> ArgumentParser:
     )
     parser.add_argument("-v", "--version", action="version", version="1.2.4")
     parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="show verbose warnings/errors",
+    )
+    parser.add_argument(
         "-d",
         "--dueassignments",
         action="store_true",
@@ -62,4 +67,3 @@ def setup_parser() -> ArgumentParser:
         help="save the downloads to a custom path, overrides .welearnrc",
     )
     return parser
-

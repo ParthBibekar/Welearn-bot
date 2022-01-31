@@ -8,7 +8,7 @@ from datetime import datetime
 from moodlews.service import MoodleClient, ServerFunctions
 from welearnbot import resolvers
 from welearnbot.gcal import publish_gcal_event
-from welearnbot.utils import get_resource, read_cache, write_cache
+from welearnbot.utils import get_resource, read_cache, write_cache, show_file_statuses
 
 
 def handle_whoami(moodle: MoodleClient) -> None:
@@ -44,6 +44,7 @@ def handle_assignments(
     # Get assignment data from server
     assignments = moodle.server(ServerFunctions.ASSIGNMENTS)
 
+    file_statuses = []
     # Assignments are grouped by course
     for course in assignments["courses"]:
         course_name = course["shortname"]
@@ -73,16 +74,18 @@ def handle_assignments(
             print(f"    {name} - {detail}")
             for attachment in assignment["introattachments"]:
                 print(f"        Attachment     : {attachment['filename']}")
-                get_resource(
-                    args,
-                    moodle,
-                    ignore_types,
-                    attachment,
-                    prefix_path,
-                    course_name,
-                    link_cache,
-                    token,
-                    indent=8,
+                file_statuses.append(
+                    get_resource(
+                        args,
+                        moodle,
+                        ignore_types,
+                        attachment,
+                        prefix_path,
+                        course_name,
+                        link_cache,
+                        token,
+                        indent=8,
+                    )
                 )
             if due:
                 print(f"        Due on         : {due_str}")
@@ -123,7 +126,9 @@ def handle_assignments(
                     config, duedate, course_name, name, assignment_id, detail
                 )
             print()
+
     write_cache(link_cache_filepath, link_cache)
+    show_file_statuses(file_statuses, verbose=args.verbose)
 
 
 def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
@@ -170,6 +175,8 @@ def handle_files(
     link_cache = read_cache(link_cache_filepath)
     course_ids = resolvers.get_courses_by_id(moodle, args)
 
+    file_statuses = []
+
     # Iterate through each course, and fetch all modules
     for courseid in course_ids:
         course_name = course_ids[courseid]
@@ -180,30 +187,34 @@ def handle_files(
                 modname = module.get("modname", "")
                 if modname == "resource":
                     for resource in module["contents"]:
-                        get_resource(
-                            args,
-                            moodle,
-                            ignore_types,
-                            resource,
-                            prefix_path,
-                            course_name,
-                            link_cache,
-                            token,
+                        file_statuses.append(
+                            get_resource(
+                                args,
+                                moodle,
+                                ignore_types,
+                                resource,
+                                prefix_path,
+                                course_name,
+                                link_cache,
+                                token,
+                            )
                         )
                 elif modname == "folder":
                     folder_name = module.get("name", "")
                     for resource in module["contents"]:
-                        get_resource(
-                            args,
-                            moodle,
-                            ignore_types,
-                            resource,
-                            prefix_path,
-                            course_name,
-                            link_cache,
-                            token,
-                            subfolder=folder_name,
+                        file_statuses.append(
+                            get_resource(
+                                args,
+                                moodle,
+                                ignore_types,
+                                resource,
+                                prefix_path,
+                                course_name,
+                                link_cache,
+                                token,
+                                subfolder=folder_name,
+                            )
                         )
 
     write_cache(link_cache_filepath, link_cache)
-
+    show_file_statuses(file_statuses, verbose=args.verbose)
