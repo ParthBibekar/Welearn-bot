@@ -86,7 +86,8 @@ def publish_gcal_event(
 
     gcal_calendar_id, service = setup_gcal(config)
 
-    if str(assignment_id) not in event_cache:
+    assignment_id = str(assignment_id)
+    if assignment_id not in event_cache:
         # Create and push a new event
         event = create_event(event_name, detail, start_time, end_time, False)
         added_event = (
@@ -99,7 +100,7 @@ def publish_gcal_event(
         # Update event if necessary
         event = (
             service.events()
-            .get(calendarId=gcal_calendar_id, eventId=event_cache[str(assignment_id)],)
+            .get(calendarId=gcal_calendar_id, eventId=event_cache[assignment_id],)
             .execute()
         )
         if event["start"]["dateTime"] != (start_time + "+05:30"):
