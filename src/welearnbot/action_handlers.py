@@ -14,7 +14,6 @@ from welearnbot.utils import get_resource, read_cache, write_cache
 def handle_whoami(moodle: MoodleClient) -> None:
     info = moodle.server(ServerFunctions.SITE_INFO)
     print(info["fullname"])
-    sys.exit(0)
 
 
 def handle_courses(moodle: MoodleClient) -> None:
@@ -30,7 +29,6 @@ def handle_courses(moodle: MoodleClient) -> None:
         if course["isfavourite"]:
             star = "*"
         print(f" {star} {course_name}")
-    sys.exit(0)
 
 
 def handle_assignments(
@@ -126,7 +124,6 @@ def handle_assignments(
                 )
             print()
     write_cache(link_cache_filepath, link_cache)
-    sys.exit(0)
 
 
 def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
@@ -160,7 +157,6 @@ def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
             print(f"        Link : {url_link}")
             print()
         print()
-    sys.exit(0)
 
 
 def handle_files(
@@ -210,5 +206,4 @@ def handle_files(
                         )
 
     write_cache(link_cache_filepath, link_cache)
-    sys.exit(0)
 
