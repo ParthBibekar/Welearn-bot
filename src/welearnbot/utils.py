@@ -148,3 +148,28 @@ def show_file_statuses(file_statuses, verbose=False) -> None:
                         len(missing)
                     )
                 )
+
+
+def get_rolls(roll_string: str) -> List[str]:
+    if "ALL" in roll_string:
+        return ["ALL"]
+    raw_rolls = roll_string.strip().upper().split(",")
+    rolls = []
+    for i, roll in enumerate(raw_rolls):
+        if roll == "...":
+            rolls.extend(expand_dots(raw_rolls[i - 1], raw_rolls[i + 1]))
+        else:
+            rolls.append(roll)
+    return rolls
+
+
+def expand_dots(start: str, end: str):
+    """
+    Gives roll nos. between `start` and `end`
+    """
+    batch = start[:4]
+    if batch != end[:4]:
+        raise ValueError("Batch id before and after '...' does not match")
+    start_roll = int(start[4:])
+    end_roll = int(end[4:])
+    return [f"{batch}{roll}" for roll in range(start_roll + 1, end_roll)]

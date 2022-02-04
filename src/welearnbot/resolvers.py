@@ -1,4 +1,5 @@
 from moodlews.service import MoodleClient, ServerFunctions
+from welearnbot.utils import get_rolls
 
 from argparse import Namespace
 from configparser import RawConfigParser
@@ -81,6 +82,18 @@ def get_all_courses(config: RawConfigParser) -> List[str]:
     all_courses = map(str.upper, all_courses)
     all_courses = list(all_courses)
     return all_courses
+
+
+def resolve_submission_details(config: RawConfigParser) -> None | dict[str, List[str]]:
+    try:
+        courses = dict(config["submissions"])
+    except KeyError:
+        return
+
+    submission_courses = {}
+    for (key, val) in courses.items():
+        submission_courses[key.upper()] = get_rolls(val)
+    return submission_courses
 
 
 def resolve_ignore_types(config: RawConfigParser, args: Namespace) -> List[str]:
