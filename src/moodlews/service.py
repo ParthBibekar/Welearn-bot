@@ -18,27 +18,28 @@ class MoodleClient:
         self.login_url = urllib.parse.urljoin(baseurl, "login/token.php")
         self.server_url = urllib.parse.urljoin(baseurl, "webservice/rest/server.php")
         self.session = Session()
+        self.token = ""
 
     def response(self, url, **data):
         return self.session.post(url, data)
-    
+
     def response_json(self, url, **data):
         response = self.response(url, **data)
         return json.loads(response.content)
-    
+
     def authenticate(self, username, password):
         login = self.response_json(
             self.login_url,
             username=username,
             password=password,
-            service="moodle_mobile_app"
+            service="moodle_mobile_app",
         )
         try:
-            self.token = login['token']
+            self.token = login["token"]
             return self.token
         except KeyError:
             return False
-    
+
     def server(self, function, **data):
         return self.response_json(
             self.server_url,
