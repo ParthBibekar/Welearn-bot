@@ -26,10 +26,7 @@ def setup_parser() -> ArgumentParser:
     )
     parser.add_argument("--version", action="version", version="1.2.4")
     parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="show verbose warnings/errors",
+        "-v", "--verbose", action="store_true", help="show verbose warnings/errors",
     )
     parser.add_argument(
         "-d",

@@ -31,19 +31,11 @@ def create_event(
         "summary": name,
         "location": "",
         "description": description,
-        "start": {
-            "dateTime": start,
-            "timeZone": "Asia/Kolkata",
-        },
-        "end": {
-            "dateTime": end,
-            "timeZone": "Asia/Kolkata",
-        },
+        "start": {"dateTime": start, "timeZone": "Asia/Kolkata",},
+        "end": {"dateTime": end, "timeZone": "Asia/Kolkata",},
         "reminders": {
             "useDefault": reminders,
-            "overrides": [
-                {"method": "popup", "minutes": 10},
-            ],
+            "overrides": [{"method": "popup", "minutes": 10},],
         },
     }
     return newevent
@@ -96,9 +88,7 @@ def get_resource(
 
     # Download the file and write to the folder
     print(
-        " " * indent + "Downloading " + short_filepath,
-        end="",
-        flush=True,
+        " " * indent + "Downloading " + short_filepath, end="", flush=True,
     )
     response = moodle.response(fileurl, token=token)
     with open(filepath, "wb") as download:
