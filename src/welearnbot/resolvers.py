@@ -18,6 +18,8 @@ def resolve_action_mode(args: Namespace) -> str:
         action = "files"
     elif "assignments".startswith(args.action[0]):
         action = "assignments"
+    elif "submissions".startswith(args.action[0]):
+        action = "submissions"
     elif "urls".startswith(args.action[0]):
         action = "urls"
     elif "courses".startswith(args.action[0]):
