@@ -40,7 +40,7 @@ class MoodleClient:
         except KeyError:
             return False
 
-    def server(self, function, **data):
+    def server(self, function, data={}):
         return self.response_json(
             self.server_url,
             wstoken=self.token,

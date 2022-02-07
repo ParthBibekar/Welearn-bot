@@ -22,7 +22,7 @@ def handle_courses(moodle: MoodleClient) -> None:
     userid = info["userid"]
 
     # Get enrolled courses information
-    courses = moodle.server(ServerFunctions.USER_COURSES, userid=userid)
+    courses = moodle.server(ServerFunctions.USER_COURSES, {"userid": userid})
     for course in courses:
         course_name = course["fullname"]
         star = " "
@@ -95,7 +95,7 @@ def handle_assignments(
 
             # Get submission details
             submission = moodle.server(
-                ServerFunctions.ASSIGNMENT_STATUS, assignid=assignment_id
+                ServerFunctions.ASSIGNMENT_STATUS, {"assignid": assignment_id}
             )
             submission_made = False
             try:
@@ -180,7 +180,7 @@ def handle_files(
     # Iterate through each course, and fetch all modules
     for courseid in course_ids:
         course_name = course_ids[courseid]
-        page = moodle.server(ServerFunctions.COURSE_CONTENTS, courseid=courseid)
+        page = moodle.server(ServerFunctions.COURSE_CONTENTS, {"courseid": courseid})
         for item in page:
             modules = item.get("modules", [])
             for module in modules:
