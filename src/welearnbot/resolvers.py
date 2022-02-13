@@ -3,7 +3,7 @@ from welearnbot.utils import get_rolls
 
 from argparse import Namespace
 from configparser import RawConfigParser
-from typing import Tuple, List
+from typing import Optional, Tuple, List
 
 import errno
 import getpass
@@ -86,7 +86,9 @@ def get_all_courses(config: RawConfigParser) -> List[str]:
     return all_courses
 
 
-def resolve_submission_details(config: RawConfigParser) -> None | dict[str, List[str]]:
+def resolve_submission_details(
+    config: RawConfigParser,
+) -> Optional[dict[str, List[str]]]:
     try:
         courses = dict(config["submissions"])
     except KeyError:
