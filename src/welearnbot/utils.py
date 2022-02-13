@@ -172,4 +172,4 @@ def expand_dots(start: str, end: str):
         raise ValueError("Batch id before and after '...' does not match")
     start_roll = int(start[4:])
     end_roll = int(end[4:])
-    return [f"{batch}{roll}" for roll in range(start_roll + 1, end_roll)]
+    return [f"{batch}{roll:03}" for roll in range(start_roll + 1, end_roll)]
