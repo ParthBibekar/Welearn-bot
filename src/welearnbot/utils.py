@@ -1,4 +1,5 @@
 from moodlews.service import MoodleClient
+from welearnbot.constants import ARCHIVE_TYPES
 
 from argparse import Namespace
 from typing import Any, Dict, List, Tuple
@@ -6,6 +7,7 @@ from typing import Any, Dict, List, Tuple
 import json
 import os
 import mimetypes
+import zipfile
 
 
 def read_cache(filepath: str) -> dict:
@@ -52,6 +54,7 @@ def download_resource(
     token: str,
     subfolders: List[str] = [],
     indent: int = 0,
+    extract: bool = True,
 ) -> Tuple[str, str]:
     """Helper function to retrieve a file/resource from the server"""
     filename = resource["filename"]
@@ -93,6 +96,13 @@ def download_resource(
     response = moodle.response(fileurl, token=token)
     with open(filepath, "wb") as download:
         download.write(response.content)
+
+    # TODO: add option whether to extract or not in the config and flag
+    if extension in ARCHIVE_TYPES and extract:
+        with zipfile.ZipFile(filepath, "r") as zip_ref:
+            zip_ref.extractall(course_dir)
+            print(" ... EXTRACTING", end="", flush=True)
+
     print(" ... DONE")
 
     # Add the file url to the cache
