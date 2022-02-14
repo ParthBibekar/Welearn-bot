@@ -50,6 +50,12 @@ def setup_parser() -> ArgumentParser:
         help="ignores the specified extensions when downloading, overrides .welearnrc",
     )
     parser.add_argument(
+        "-r",
+        "--rolls",
+        nargs="*",
+        help="roll numbers for which you want to download the submissions using the 'submissions' action",
+    )
+    parser.add_argument(
         "-f",
         "--forcedownload",
         action="store_true",

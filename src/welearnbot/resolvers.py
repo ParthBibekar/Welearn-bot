@@ -40,6 +40,11 @@ def resolve_action_mode(args: Namespace) -> str:
             "Can only use --gcalendar with 'assignments' action! Use the -h flag for usage."
         )
         sys.exit(errno.EPERM)
+    if args.rolls and action != "submissions":
+        print(
+            "Can only use --rolls with 'submission' action! Use the -h flag for usage."
+        )
+        sys.exit(errno.EPERM)
     return action
 
 
