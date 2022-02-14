@@ -2,6 +2,7 @@ from requests import Session
 import urllib.parse
 import json
 
+
 class ServerFunctions:
     SITE_INFO = "core_webservice_get_site_info"
     ALL_COURSES = "core_course_get_courses_by_field"
@@ -11,6 +12,9 @@ class ServerFunctions:
     ASSIGNMENT_STATUS = "mod_assign_get_submission_status"
     URLS = "mod_url_get_urls_by_courses"
     RESOURCES = "mod_resource_get_resources_by_courses"
+    COURSE_USERS = "core_enrol_get_enrolled_users"
+    SUBMISSION = "mod_assign_get_submission_status"
+
 
 class MoodleClient:
     def __init__(self, baseurl):
