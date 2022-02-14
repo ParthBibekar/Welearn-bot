@@ -214,9 +214,10 @@ def show_file_statuses(file_statuses, verbose=False) -> None:
 
 
 def get_rolls(roll_string: str) -> List[str]:
+    roll_string = roll_string.strip().upper()
     if "ALL" in roll_string:
         return ["ALL"]
-    raw_rolls = roll_string.strip().upper().split(",")
+    raw_rolls = roll_string.split(",")
     rolls = []
     for i, roll in enumerate(raw_rolls):
         if roll == "...":
