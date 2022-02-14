@@ -10,6 +10,7 @@ from welearnbot import resolvers
 from welearnbot.gcal import publish_gcal_event
 from welearnbot.utils import (
     download_resource,
+    get_rolls,
     read_cache,
     write_cache,
     show_file_statuses,
@@ -149,9 +150,15 @@ def handle_submissions(
     link_cache = read_cache(link_cache_filepath)
     file_statuses = []
     for course, rolls in submission_config.items():
+        if course not in args.courses:
+            continue
         if course not in course_cache:
             print(f"{course} is not a valid course id")
             continue
+        if args.rolls:
+            rolls = get_rolls(",".join(args.rolls))
+        if "ALL" in rolls:
+            rolls = sorted(course_cache[course]["participants"].keys())
         for assignment in course_cache[course]["assignments"]:
             if assignment["duedate"] > time():
                 continue
@@ -163,9 +170,12 @@ def handle_submissions(
                         "userid": course_cache[course]["participants"][roll]["id"],
                     },
                 )
-                file_data = submission_data["lastattempt"]["submission"]["plugins"][0][
-                    "fileareas"
-                ][0]["files"]
+                try:
+                    file_data = submission_data["lastattempt"]["submission"]["plugins"][
+                        0
+                    ]["fileareas"][0]["files"]
+                except KeyError:
+                    continue
                 if file_data:
                     file_statuses.append(
                         download_resource(
