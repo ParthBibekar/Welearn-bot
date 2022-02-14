@@ -63,6 +63,18 @@ def main():
             args, config, moodle, ignore_types, prefix_path, link_cache_filepath, token
         )
 
+    elif action == "submissions":
+        handler.handle_submissions(
+            args,
+            moodle,
+            course_cache,
+            submission_config,
+            ignore_types,
+            prefix_path,
+            link_cache_filepath,
+            token,
+        )
+
     elif action == "urls":
         handler.handle_urls(args, moodle)
 

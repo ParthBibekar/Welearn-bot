@@ -1,6 +1,6 @@
 from argparse import Namespace
 from configparser import RawConfigParser
-import sys
+from time import time
 from typing import List
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
@@ -132,6 +132,54 @@ def handle_assignments(
                 )
             print()
 
+    write_cache(link_cache_filepath, link_cache)
+    show_file_statuses(file_statuses, verbose=args.verbose)
+
+
+def handle_submissions(
+    args: Namespace,
+    moodle: MoodleClient,
+    course_cache: dict,
+    submission_config: dict,
+    ignore_types: List[str],
+    prefix_path: str,
+    link_cache_filepath: str,
+    token: str,
+) -> None:
+    link_cache = read_cache(link_cache_filepath)
+    file_statuses = []
+    for course, rolls in submission_config.items():
+        if course not in course_cache:
+            print(f"{course} is not a valid course id")
+            continue
+        for assignment in course_cache[course]["assignments"]:
+            if assignment["duedate"] > time():
+                continue
+            for roll in rolls:
+                submission_data = moodle.server(
+                    ServerFunctions.SUBMISSION,
+                    {
+                        "assignid": assignment["id"],
+                        "userid": course_cache[course]["participants"][roll]["id"],
+                    },
+                )
+                file_data = submission_data["lastattempt"]["submission"]["plugins"][0][
+                    "fileareas"
+                ][0]["files"]
+                if file_data:
+                    file_statuses.append(
+                        download_resource(
+                            args,
+                            moodle,
+                            ignore_types,
+                            file_data[0],
+                            prefix_path,
+                            course,
+                            link_cache,
+                            token,
+                            ["submissions", assignment["name"], roll],
+                        )
+                    )
     write_cache(link_cache_filepath, link_cache)
     show_file_statuses(file_statuses, verbose=args.verbose)
 
