@@ -50,12 +50,12 @@ def download_resource(
     course: str,
     cache: dict,
     token: str,
-    subfolder: str = "",
+    subfolders: List[str] = [],
     indent: int = 0,
 ) -> Tuple[str, str]:
     """Helper function to retrieve a file/resource from the server"""
     filename = resource["filename"]
-    course_dir = os.path.join(prefix, course, subfolder)
+    course_dir = os.path.join(prefix, course, *subfolders)
     fileurl = resource["fileurl"]
     _, extension = os.path.splitext(filename)
     extension = str.upper(extension[1:])
@@ -65,7 +65,7 @@ def download_resource(
         filename += extension
         extension = extension[1:]
     filepath = os.path.join(course_dir, filename)
-    short_filepath = os.path.join(course, subfolder, filename)
+    short_filepath = os.path.join(course, *subfolders, filename)
     timemodified = int(resource["timemodified"])
 
     # Only download if forced, or not already downloaded

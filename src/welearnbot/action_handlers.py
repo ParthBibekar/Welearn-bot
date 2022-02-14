@@ -217,7 +217,7 @@ def handle_files(
                                 course_name,
                                 link_cache,
                                 token,
-                                subfolder=folder_name,
+                                subfolders=[folder_name],
                             )
                         )
 
