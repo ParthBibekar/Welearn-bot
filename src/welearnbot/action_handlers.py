@@ -1,20 +1,15 @@
 from argparse import Namespace
 from configparser import RawConfigParser
+import os
 from time import time
 from typing import List
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
 
 from moodlews.service import MoodleClient, ServerFunctions
-from welearnbot import resolvers
+from welearnbot import resolvers, utils
+from welearnbot.constants import COURSE_CACHE
 from welearnbot.gcal import publish_gcal_event
-from welearnbot.utils import (
-    download_resource,
-    get_rolls,
-    read_cache,
-    write_cache,
-    show_file_statuses,
-)
 
 
 def handle_whoami(moodle: MoodleClient) -> None:
@@ -46,7 +41,7 @@ def handle_assignments(
     link_cache_filepath: str,
     token: str,
 ) -> None:
-    link_cache = read_cache(link_cache_filepath)
+    link_cache = utils.read_cache(link_cache_filepath)
     # Get assignment data from server
     assignments = moodle.server(ServerFunctions.ASSIGNMENTS)
 
@@ -81,7 +76,7 @@ def handle_assignments(
             for attachment in assignment["introattachments"]:
                 print(f"        Attachment     : {attachment['filename']}")
                 file_statuses.append(
-                    download_resource(
+                    utils.download_resource(
                         args,
                         moodle,
                         ignore_types,
@@ -133,21 +128,31 @@ def handle_assignments(
                 )
             print()
 
-    write_cache(link_cache_filepath, link_cache)
-    show_file_statuses(file_statuses, verbose=args.verbose)
+    utils.write_cache(link_cache_filepath, link_cache)
+    utils.show_file_statuses(file_statuses, verbose=args.verbose)
 
 
 def handle_submissions(
     args: Namespace,
+    config: RawConfigParser,
     moodle: MoodleClient,
-    course_cache: dict,
-    submission_config: dict,
     ignore_types: List[str],
     prefix_path: str,
     link_cache_filepath: str,
     token: str,
 ) -> None:
-    link_cache = read_cache(link_cache_filepath)
+    userid = resolvers.get_userid(moodle)
+
+    submission_config = resolvers.resolve_submission_details(config)
+
+    course_cache_filepath = os.path.join(prefix_path, COURSE_CACHE)
+    course_cache = utils.read_cache(course_cache_filepath)
+    if not course_cache:
+        course_cache = utils.construct_course_cache(
+            moodle, course_cache_filepath, userid, submission_config
+        )
+
+    link_cache = utils.read_cache(link_cache_filepath)
     file_statuses = []
     for course, rolls in submission_config.items():
         if course not in args.courses:
@@ -156,7 +161,7 @@ def handle_submissions(
             print(f"{course} is not a valid course id")
             continue
         if args.rolls:
-            rolls = get_rolls(",".join(args.rolls))
+            rolls = utils.get_rolls(",".join(args.rolls))
         if "ALL" in rolls:
             rolls = sorted(course_cache[course]["participants"].keys())
         for assignment in course_cache[course]["assignments"]:
@@ -178,7 +183,7 @@ def handle_submissions(
                     continue
                 if file_data:
                     file_statuses.append(
-                        download_resource(
+                        utils.download_resource(
                             args,
                             moodle,
                             ignore_types,
@@ -190,8 +195,8 @@ def handle_submissions(
                             ["submissions", assignment["name"], roll],
                         )
                     )
-    write_cache(link_cache_filepath, link_cache)
-    show_file_statuses(file_statuses, verbose=args.verbose)
+    utils.write_cache(link_cache_filepath, link_cache)
+    utils.show_file_statuses(file_statuses, verbose=args.verbose)
 
 
 def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
@@ -229,13 +234,14 @@ def handle_urls(args: Namespace, moodle: MoodleClient) -> None:
 
 def handle_files(
     args: Namespace,
+    config: RawConfigParser,
     moodle: MoodleClient,
     ignore_types: List[str],
     prefix_path: str,
     link_cache_filepath: str,
     token: str,
 ) -> None:
-    link_cache = read_cache(link_cache_filepath)
+    link_cache = utils.read_cache(link_cache_filepath)
     course_ids = resolvers.get_courses_by_id(moodle, args)
 
     file_statuses = []
@@ -251,7 +257,7 @@ def handle_files(
                 if modname == "resource":
                     for resource in module["contents"]:
                         file_statuses.append(
-                            download_resource(
+                            utils.download_resource(
                                 args,
                                 moodle,
                                 ignore_types,
@@ -266,7 +272,7 @@ def handle_files(
                     folder_name = module.get("name", "")
                     for resource in module["contents"]:
                         file_statuses.append(
-                            download_resource(
+                            utils.download_resource(
                                 args,
                                 moodle,
                                 ignore_types,
@@ -279,5 +285,5 @@ def handle_files(
                             )
                         )
 
-    write_cache(link_cache_filepath, link_cache)
-    show_file_statuses(file_statuses, verbose=args.verbose)
+    utils.write_cache(link_cache_filepath, link_cache)
+    utils.show_file_statuses(file_statuses, verbose=args.verbose)
