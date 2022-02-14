@@ -22,6 +22,15 @@ def main():
     config = resolvers.get_config()
     username, password = resolvers.get_credentials(config)
 
+    # Login to WeLearn with supplied credentials
+    moodle = MoodleClient(BASEURL)
+    token = moodle.authenticate(username, password)
+    if not token:
+        print("Invalid credentials!")
+        sys.exit(errno.EACCES)
+
+    userid = resolvers.get_userid(moodle)
+
     # Select all courses from config if `ALL` keyword is used
     if "ALL" in map(str.upper, args.courses):
         args.courses = resolvers.get_all_courses(config)
@@ -29,12 +38,8 @@ def main():
     ignore_types = resolvers.resolve_ignore_types(config, args)
 
     prefix_path = resolvers.resolve_prefix_path(config, args)
-    # Login to WeLearn with supplied credentials
-    moodle = MoodleClient(BASEURL)
-    token = moodle.authenticate(username, password)
-    if not token:
-        print("Invalid credentials!")
-        sys.exit(errno.EACCES)
+
+    submission_config = resolvers.resolve_submission_details(config)
 
     # Store cache file paths
     link_cache_filepath = os.path.join(prefix_path, LINK_CACHE)

@@ -74,6 +74,11 @@ def get_credentials(config: RawConfigParser) -> Tuple[str, str]:
     return username, password
 
 
+def get_userid(moodle: MoodleClient):
+    site_info = moodle.server(ServerFunctions.SITE_INFO)
+    return site_info["userid"]
+
+
 def get_all_courses(config: RawConfigParser) -> List[str]:
     """Also extract the list of `ALL` courses"""
     try:
