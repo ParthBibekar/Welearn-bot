@@ -41,11 +41,11 @@ def create_event(
     return newevent
 
 
-def get_resource(
+def download_resource(
     args: Namespace,
     moodle: MoodleClient,
     ignore_types: List[str],
-    res: Any,
+    resource: Any,
     prefix: str,
     course: str,
     cache: dict,
@@ -54,19 +54,19 @@ def get_resource(
     indent: int = 0,
 ) -> Tuple[str, str]:
     """Helper function to retrieve a file/resource from the server"""
-    filename = res["filename"]
+    filename = resource["filename"]
     course_dir = os.path.join(prefix, course, subfolder)
-    fileurl = res["fileurl"]
+    fileurl = resource["fileurl"]
     _, extension = os.path.splitext(filename)
     extension = str.upper(extension[1:])
     if extension == "":
         # Missing extension - guess on the basis of the mimetype
-        extension = mimetypes.guess_extension(res["mimetype"])
+        extension = mimetypes.guess_extension(resource["mimetype"])
         filename += extension
         extension = extension[1:]
     filepath = os.path.join(course_dir, filename)
     short_filepath = os.path.join(course, subfolder, filename)
-    timemodified = int(res["timemodified"])
+    timemodified = int(resource["timemodified"])
 
     # Only download if forced, or not already downloaded
     if not args.forcedownload and fileurl in cache:

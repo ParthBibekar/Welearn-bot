@@ -8,7 +8,12 @@ from datetime import datetime
 from moodlews.service import MoodleClient, ServerFunctions
 from welearnbot import resolvers
 from welearnbot.gcal import publish_gcal_event
-from welearnbot.utils import get_resource, read_cache, write_cache, show_file_statuses
+from welearnbot.utils import (
+    download_resource,
+    read_cache,
+    write_cache,
+    show_file_statuses,
+)
 
 
 def handle_whoami(moodle: MoodleClient) -> None:
@@ -75,7 +80,7 @@ def handle_assignments(
             for attachment in assignment["introattachments"]:
                 print(f"        Attachment     : {attachment['filename']}")
                 file_statuses.append(
-                    get_resource(
+                    download_resource(
                         args,
                         moodle,
                         ignore_types,
@@ -188,7 +193,7 @@ def handle_files(
                 if modname == "resource":
                     for resource in module["contents"]:
                         file_statuses.append(
-                            get_resource(
+                            download_resource(
                                 args,
                                 moodle,
                                 ignore_types,
@@ -203,7 +208,7 @@ def handle_files(
                     folder_name = module.get("name", "")
                     for resource in module["contents"]:
                         file_statuses.append(
-                            get_resource(
+                            download_resource(
                                 args,
                                 moodle,
                                 ignore_types,
