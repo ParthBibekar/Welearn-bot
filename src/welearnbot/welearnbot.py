@@ -4,8 +4,9 @@ from moodlews.service import MoodleClient
 
 import welearnbot.action_handlers as handler
 from welearnbot import resolvers
-from welearnbot.constants import BASEURL, LINK_CACHE
+from welearnbot.constants import BASEURL, COURSE_CACHE, LINK_CACHE
 from welearnbot.parser import setup_parser
+from welearnbot.utils import construct_course_cache, read_cache
 
 import errno
 import os
@@ -43,6 +44,12 @@ def main():
 
     # Store cache file paths
     link_cache_filepath = os.path.join(prefix_path, LINK_CACHE)
+    course_cache_filepath = os.path.join(prefix_path, COURSE_CACHE)
+    course_cache = read_cache(course_cache_filepath)
+    if not course_cache:
+        course_cache = construct_course_cache(
+            moodle, course_cache_filepath, userid, submission_config
+        )
 
     # Action picker
     if action == "whoami":

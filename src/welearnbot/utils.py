@@ -1,4 +1,4 @@
-from moodlews.service import MoodleClient
+from moodlews.service import MoodleClient, ServerFunctions
 from welearnbot.constants import ARCHIVE_TYPES
 
 from argparse import Namespace
@@ -23,6 +23,59 @@ def write_cache(filepath: str, cache: dict) -> None:
     """Update cache file"""
     with open(filepath, "w") as cache_file:
         json.dump(cache, cache_file)
+
+
+def construct_course_cache(
+    moodle: MoodleClient,
+    course_cache_filepath: str,
+    userid: str,
+    submission_config: dict[str, List[str]],
+):
+    courses = moodle.server(ServerFunctions.USER_COURSES, {"userid": userid})
+    cache = {}
+    for course in courses:
+        courseid = course["shortname"]
+        if courseid not in submission_config:
+            continue
+        course_data = {
+            "id": course["id"],
+            "courseid": course["shortname"],
+            "name": course["fullname"],
+            "participants": {},
+        }
+        participants = moodle.server(
+            ServerFunctions.COURSE_USERS, {"courseid": course["id"]}
+        )
+        for participant in participants:
+            course_data["participants"][participant["idnumber"]] = {
+                "id": participant["id"],
+                "name": participant["fullname"],
+                "email": participant["email"],
+                "roles": [role_data["name"] for role_data in participant["roles"]],
+            }
+        cache[courseid] = course_data
+    for course in submission_config:
+        if course not in cache:
+            continue
+        assignments = moodle.server(
+            ServerFunctions.ASSIGNMENTS, {"courseids[0]": cache[course]["id"]}
+        )
+        assignments = assignments["courses"][0]["assignments"]
+        cache[course]["assignments"] = [
+            {
+                "id": a["id"],
+                "name": a["name"],
+                "fileurl": a["introattachments"][0]["fileurl"]
+                if a["introattachments"]
+                else "",
+                "duedate": a["duedate"],
+                "opendate": a["allowsubmissionsfromdate"],
+            }
+            for a in assignments
+        ]
+    with open(course_cache_filepath, "w") as f:
+        json.dump(cache, f)
+    return cache
 
 
 def create_event(
