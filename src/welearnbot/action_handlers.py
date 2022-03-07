@@ -1,14 +1,14 @@
 from argparse import Namespace
 from configparser import RawConfigParser
 import sys
-from typing import List
+from typing import List, Tuple, Any
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
 
 from moodlews.service import MoodleClient, ServerFunctions
 from welearnbot import resolvers
 from welearnbot.gcal import publish_gcal_event
-from welearnbot.utils import get_resource, read_cache, write_cache, show_file_statuses
+from welearnbot.utils import get_resource, get_resources, read_cache, write_cache, show_file_statuses
 
 
 def handle_whoami(moodle: MoodleClient) -> None:
@@ -181,40 +181,35 @@ def handle_files(
     for courseid in course_ids:
         course_name = course_ids[courseid]
         page = moodle.server(ServerFunctions.COURSE_CONTENTS, courseid=courseid)
+        # For each course we populate resources and download all of them in
+        # parallel
+        # List[Typle[resource, subpath]]
+        resources_data: List[Tuple[Any, str]] = []
+
         for item in page:
             modules = item.get("modules", [])
             for module in modules:
                 modname = module.get("modname", "")
                 if modname == "resource":
                     for resource in module["contents"]:
-                        file_statuses.append(
-                            get_resource(
-                                args,
-                                moodle,
-                                ignore_types,
-                                resource,
-                                prefix_path,
-                                course_name,
-                                link_cache,
-                                token,
-                            )
-                        )
+                        resources_data.append((resource, ""))
                 elif modname == "folder":
                     folder_name = module.get("name", "")
                     for resource in module["contents"]:
-                        file_statuses.append(
-                            get_resource(
-                                args,
-                                moodle,
-                                ignore_types,
-                                resource,
-                                prefix_path,
-                                course_name,
-                                link_cache,
-                                token,
-                                subfolder=folder_name,
-                            )
-                        )
+                        resources_data.append((resource, folder_name))
+
+        # download all the resources for the course, and append their statuses
+        course_file_statuses = get_resources(args,
+                                             moodle,
+                                             ignore_types,
+                                             resources_data,
+                                             prefix_path,
+                                             course_name,
+                                             link_cache,
+                                             token
+                                             )
+        file_statuses.extend(course_file_statuses)
+
 
     write_cache(link_cache_filepath, link_cache)
     show_file_statuses(file_statuses, verbose=args.verbose)

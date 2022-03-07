@@ -97,17 +97,58 @@ def get_resource(
     # Download the file and write to the folder
     print(
         " " * indent + "Downloading " + short_filepath,
-        end="",
         flush=True,
     )
     response = moodle.response(fileurl, token=token)
     with open(filepath, "wb") as download:
         download.write(response.content)
-    print(" ... DONE")
+    print( " " * indent + short_filepath + " ... DONE", flush=True)
 
     # Add the file url to the cache
     cache[fileurl] = timemodified
     return "DOWNLOADED", short_filepath
+
+
+def get_resources(
+    args: Namespace,
+    moodle: MoodleClient,
+    ignore_types: List[str],
+    resources_data: List[Tuple[Any, str]],
+    prefix: str,
+    course: str,
+    cache: dict,
+    token: str,
+) -> List[Tuple[str, str]]:
+    """
+    This is a wrapper over get_resource that parallelizes downloads
+
+    resources_data_list is a list of resource_data
+    where resource_data is the data of what needs to be downloaded with
+    it's folder location like this
+    Tuple[resource, subfolder]
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _get_resource(resource_data: Tuple[Any, str]) -> Tuple[str, str]:
+        resource, folder_name = resource_data
+        return get_resource(args,
+                   moodle,
+                   ignore_types,
+                   resource,
+                   prefix,
+                   course,
+                   cache,
+                   token,
+                   subfolder=folder_name)
+
+    with ThreadPoolExecutor() as exe:
+        file_statuses = exe.map(_get_resource, resources_data)
+
+    # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
+    # exception hanlding must be done while retrieving the items for the map's iterator
+    # ie, exceptions will be raised here while converting iterator in to list
+    return list(file_statuses)
+
 
 
 def show_file_statuses(file_statuses, verbose=False) -> None:
