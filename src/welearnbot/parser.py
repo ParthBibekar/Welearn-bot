@@ -24,7 +24,7 @@ def setup_parser() -> ArgumentParser:
         nargs="*",
         help="IDs of the courses to download files from. The word ALL selects everything \nfrom the [courses] section in .welearnrc or welearn.ini",
     )
-    parser.add_argument("--version", action="version", version="1.2.4")
+    parser.add_argument("--version", action="version", version="1.2.5")
     parser.add_argument(
         "-v",
         "--verbose",
