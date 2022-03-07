@@ -1,11 +1,11 @@
-from moodlews.service import MoodleClient
-
 from argparse import Namespace
+from concurrent.futures import ThreadPoolExecutor
+import json
+import mimetypes
+import os
 from typing import Any, Dict, List, Tuple
 
-import json
-import os
-import mimetypes
+from moodlews.service import MoodleClient
 
 
 def read_cache(filepath: str) -> dict:
@@ -102,7 +102,7 @@ def get_resource(
     response = moodle.response(fileurl, token=token)
     with open(filepath, "wb") as download:
         download.write(response.content)
-    print( " " * indent + short_filepath + " ... DONE", flush=True)
+    print(" " * indent + short_filepath + " ... DONE", flush=True)
 
     # Add the file url to the cache
     cache[fileurl] = timemodified
@@ -127,28 +127,27 @@ def get_resources(
     it's folder location like this
     Tuple[resource, subfolder]
     """
-    from concurrent.futures import ThreadPoolExecutor
 
     def _get_resource(resource_data: Tuple[Any, str]) -> Tuple[str, str]:
         resource, folder_name = resource_data
         return get_resource(args,
-                   moodle,
-                   ignore_types,
-                   resource,
-                   prefix,
-                   course,
-                   cache,
-                   token,
-                   subfolder=folder_name)
+                            moodle,
+                            ignore_types,
+                            resource,
+                            prefix,
+                            course,
+                            cache,
+                            token,
+                            subfolder=folder_name)
 
     with ThreadPoolExecutor() as exe:
         file_statuses = exe.map(_get_resource, resources_data)
 
     # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
-    # exception hanlding must be done while retrieving the items for the map's iterator
+    # exception hanlding must be done while retrieving
+    # the items for the map's iterator
     # ie, exceptions will be raised here while converting iterator in to list
     return list(file_statuses)
-
 
 
 def show_file_statuses(file_statuses, verbose=False) -> None:

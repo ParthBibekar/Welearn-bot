@@ -1,14 +1,21 @@
 from argparse import Namespace
 from configparser import RawConfigParser
-import sys
-from typing import List, Tuple, Any
-from bs4 import BeautifulSoup as bs
 from datetime import datetime
+import sys
+from typing import Any, List, Tuple
+
+from bs4 import BeautifulSoup as bs
 
 from moodlews.service import MoodleClient, ServerFunctions
 from welearnbot import resolvers
 from welearnbot.gcal import publish_gcal_event
-from welearnbot.utils import get_resource, get_resources, read_cache, write_cache, show_file_statuses
+from welearnbot.utils import (
+    get_resource,
+    get_resources,
+    read_cache,
+    show_file_statuses,
+    write_cache,
+)
 
 
 def handle_whoami(moodle: MoodleClient) -> None:
@@ -209,7 +216,6 @@ def handle_files(
                                              token
                                              )
         file_statuses.extend(course_file_statuses)
-
 
     write_cache(link_cache_filepath, link_cache)
     show_file_statuses(file_statuses, verbose=args.verbose)
