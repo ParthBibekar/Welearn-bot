@@ -32,7 +32,7 @@ def main():
     # Select all courses from config if `ALL` keyword is used
     if "ALL" in map(str.upper, args.courses):
         if action == "submissions":
-            args.courses = list(resolvers.resolve_submission_details().keys())
+            args.courses = list(resolvers.resolve_submission_details(config).keys())
         else:
             args.courses = resolvers.get_all_courses(config)
 
