@@ -157,15 +157,19 @@ def handle_submissions(
     link_cache = utils.read_cache(link_cache_filepath)
     file_statuses = []
     for course in args.courses:
-        if course not in submission_config.keys():
-            print(f"No entry for {course} in the config under [submissions] section")
-            continue
         if course not in courses_cache:
             print(f"{course} is not a valid course id")
             continue
-        rolls = submission_config[course]
         if args.rolls:
             rolls = utils.get_rolls(",".join(args.rolls))
+        else:
+            try:
+                rolls = submission_config[course]
+            except KeyError:
+                print(
+                    f'Could not resolve roll numbers for {course}. Please add it in your config or use "-r" flag'
+                )
+                continue
         if "ALL" in rolls:
             rolls = sorted(courses_cache[course]["participants"].keys())
         for assignment in courses_cache[course]["assignments"]:
