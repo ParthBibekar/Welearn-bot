@@ -146,25 +146,29 @@ def handle_submissions(
     submission_config = resolvers.resolve_submission_details(config)
 
     course_cache_filepath = os.path.join(prefix_path, COURSE_CACHE)
-    course_cache = utils.read_cache(course_cache_filepath)
-    if not course_cache:
-        course_cache = utils.construct_course_cache(
-            moodle, course_cache_filepath, userid, submission_config
-        )
+    courses_cache = utils.get_courses_cache(
+        moodle,
+        course_cache_filepath,
+        userid,
+        submission_config.keys(),
+        args.update_course_cache,
+    )
 
     link_cache = utils.read_cache(link_cache_filepath)
     file_statuses = []
-    for course, rolls in submission_config.items():
-        if course not in args.courses:
+    for course in args.courses:
+        if course not in submission_config.keys():
+            print(f"No entry for {course} in the config under [submissions] section")
             continue
-        if course not in course_cache:
+        if course not in courses_cache:
             print(f"{course} is not a valid course id")
             continue
+        rolls = submission_config[course]
         if args.rolls:
             rolls = utils.get_rolls(",".join(args.rolls))
         if "ALL" in rolls:
-            rolls = sorted(course_cache[course]["participants"].keys())
-        for assignment in course_cache[course]["assignments"]:
+            rolls = sorted(courses_cache[course]["participants"].keys())
+        for assignment in courses_cache[course]["assignments"]:
             if assignment["duedate"] > time():
                 continue
             for roll in rolls:
@@ -172,7 +176,7 @@ def handle_submissions(
                     ServerFunctions.SUBMISSION,
                     {
                         "assignid": assignment["id"],
-                        "userid": course_cache[course]["participants"][roll]["id"],
+                        "userid": courses_cache[course]["participants"][roll]["id"],
                     },
                 )
                 try:

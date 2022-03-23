@@ -56,21 +56,27 @@ def setup_parser() -> ArgumentParser:
         help="roll numbers for which you want to download the submissions using the 'submissions' action",
     )
     parser.add_argument(
+        "-p",
+        "--pathprefix",
+        nargs=1,
+        help="save the downloads to a custom path, overrides .welearnrc",
+    )
+    parser.add_argument(
         "-f",
         "--forcedownload",
         action="store_true",
         help="force download files even if already downloaded/ignored",
     )
     parser.add_argument(
+        "-u",
+        "--update-course-cache",
+        action="store_true",
+        help="update course cache. Use this class when you change [submissions] section of config",
+    )
+    parser.add_argument(
         "-m",
         "--missingdownload",
         action="store_true",
         help="re-download those files which were downloaded earlier but deleted/moved from their location",
-    )
-    parser.add_argument(
-        "-p",
-        "--pathprefix",
-        nargs=1,
-        help="save the downloads to a custom path, overrides .welearnrc",
     )
     return parser

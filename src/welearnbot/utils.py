@@ -25,36 +25,36 @@ def write_cache(filepath: str, cache: dict) -> None:
         json.dump(cache, cache_file)
 
 
-def construct_course_cache(
+def get_courses_cache(
     moodle: MoodleClient,
     course_cache_filepath: str,
     userid: str,
-    submission_config: dict[str, List[str]],
+    config_courses: List[str],
+    update_course_details: bool = False,
 ):
-    courses = moodle.server(ServerFunctions.USER_COURSES, {"userid": userid})
-    cache = {}
-    for course in courses:
-        courseid = course["shortname"]
-        if courseid not in submission_config:
-            continue
-        course_data = {
-            "id": course["id"],
-            "courseid": course["shortname"],
-            "name": course["fullname"],
-            "participants": {},
-        }
-        participants = moodle.server(
-            ServerFunctions.COURSE_USERS, {"courseid": course["id"]}
-        )
-        for participant in participants:
-            course_data["participants"][participant["idnumber"]] = {
-                "id": participant["id"],
-                "name": participant["fullname"],
-                "email": participant["email"],
-                "roles": [role_data["name"] for role_data in participant["roles"]],
+    cache = read_cache(course_cache_filepath)
+    if update_course_details:
+        courses = moodle.server(ServerFunctions.USER_COURSES, {"userid": userid})
+        for course in courses:
+            courseid = course["shortname"]
+            if courseid not in config_courses:
+                continue
+            course_data = {
+                "id": course["id"],
+                "courseid": course["shortname"],
+                "name": course["fullname"],
+                "participants": {},
             }
-        cache[courseid] = course_data
-    for course in submission_config:
+            participants = moodle.server(
+                ServerFunctions.COURSE_USERS, {"courseid": course["id"]}
+            )
+            for participant in participants:
+                course_data["participants"][participant["idnumber"]] = {
+                    "id": participant["id"],
+                    "name": participant["fullname"],
+                }
+            cache[courseid] = course_data
+    for course in config_courses:
         if course not in cache:
             continue
         assignments = moodle.server(

@@ -31,7 +31,10 @@ def main():
 
     # Select all courses from config if `ALL` keyword is used
     if "ALL" in map(str.upper, args.courses):
-        args.courses = resolvers.get_all_courses(config)
+        if action == "submissions":
+            args.courses = list(resolvers.resolve_submission_details().keys())
+        else:
+            args.courses = resolvers.get_all_courses(config)
 
     ignore_types = resolvers.resolve_ignore_types(config, args)
 
