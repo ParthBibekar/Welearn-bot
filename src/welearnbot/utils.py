@@ -26,19 +26,13 @@ def write_cache(filepath: str, cache: dict) -> None:
 
 
 def get_courses_cache(
-    moodle: MoodleClient,
-    course_cache_filepath: str,
-    userid: str,
-    config_courses: List[str],
-    update_course_details: bool = False,
+    moodle: MoodleClient, course_cache_filepath: str, userid: str, update: bool = False,
 ):
     cache = read_cache(course_cache_filepath)
-    if update_course_details or not cache:
+    if update or not cache:
         courses = moodle.server(ServerFunctions.USER_COURSES, {"userid": userid})
         for course in courses:
             courseid = course["shortname"]
-            if courseid not in config_courses:
-                continue
             course_data = {
                 "id": course["id"],
                 "courseid": course["shortname"],
@@ -49,33 +43,39 @@ def get_courses_cache(
                 ServerFunctions.COURSE_USERS, {"courseid": course["id"]}
             )
             for participant in participants:
-                course_data["participants"][participant["idnumber"]] = {
-                    "id": participant["id"],
-                    "name": participant["fullname"],
-                }
+                try:
+                    print(participant["idnumber"])
+                    course_data["participants"][participant["idnumber"]] = {
+                        "id": participant["id"],
+                        "name": participant["fullname"],
+                    }
+                except KeyError:
+                    # skip caching details of participants whose information is not available.
+                    # This mostly happens for instructors
+                    continue
             cache[courseid] = course_data
-    for course in config_courses:
-        if course not in cache:
-            continue
-        assignments = moodle.server(
-            ServerFunctions.ASSIGNMENTS, {"courseids[0]": cache[course]["id"]}
-        )
-        assignments = assignments["courses"][0]["assignments"]
-        cache[course]["assignments"] = [
-            {
-                "id": a["id"],
-                "name": a["name"],
-                "fileurl": a["introattachments"][0]["fileurl"]
-                if a["introattachments"]
-                else "",
-                "duedate": a["duedate"],
-                "opendate": a["allowsubmissionsfromdate"],
-            }
-            for a in assignments
-        ]
     with open(course_cache_filepath, "w") as f:
         json.dump(cache, f)
     return cache
+
+
+def fetch_assignments(moodle, courseid) -> List[Any]:
+    assignments = moodle.server(
+        ServerFunctions.ASSIGNMENTS, {"courseids[0]": courseid}  # cache[course]["id"]}
+    )
+    assignments = assignments["courses"][0]["assignments"]
+    return [
+        {
+            "id": a["id"],
+            "name": a["name"],
+            "fileurl": a["introattachments"][0]["fileurl"]
+            if a["introattachments"]
+            else "",
+            "duedate": a["duedate"],
+            "opendate": a["allowsubmissionsfromdate"],
+        }
+        for a in assignments
+    ]
 
 
 def create_event(

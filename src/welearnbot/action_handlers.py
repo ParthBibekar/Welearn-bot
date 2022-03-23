@@ -147,11 +147,7 @@ def handle_submissions(
 
     course_cache_filepath = os.path.join(prefix_path, COURSE_CACHE)
     courses_cache = utils.get_courses_cache(
-        moodle,
-        course_cache_filepath,
-        userid,
-        submission_config.keys(),
-        args.update_course_cache,
+        moodle, course_cache_filepath, userid, args.update_course_cache,
     )
 
     link_cache = utils.read_cache(link_cache_filepath)
@@ -172,7 +168,9 @@ def handle_submissions(
                 continue
         if "ALL" in rolls:
             rolls = sorted(courses_cache[course]["participants"].keys())
-        for assignment in courses_cache[course]["assignments"]:
+
+        assignments = utils.fetch_assignments(moodle, courses_cache[course]["id"])
+        for assignment in assignments:
             if assignment["duedate"] > time():
                 continue
             for roll in rolls:
