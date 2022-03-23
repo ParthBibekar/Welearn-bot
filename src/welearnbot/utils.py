@@ -33,7 +33,7 @@ def get_courses_cache(
     update_course_details: bool = False,
 ):
     cache = read_cache(course_cache_filepath)
-    if update_course_details:
+    if update_course_details or not cache:
         courses = moodle.server(ServerFunctions.USER_COURSES, {"userid": userid})
         for course in courses:
             courseid = course["shortname"]
