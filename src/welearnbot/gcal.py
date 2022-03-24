@@ -114,4 +114,3 @@ def publish_gcal_event(
             event_cache[assignment_id] = updated_event["id"]
             print(f"        Updated event in calendar.")
     write_cache(event_cache_filepath, event_cache)
-
