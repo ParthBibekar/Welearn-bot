@@ -15,7 +15,7 @@ which shows you how to use the accompanying `moodlews.service` module to write y
 ### Video Tutorial
 We have a [Video Tutorial](https://youtu.be/hZfAOyDvK70) made in association with SlashDot Coding Club which goes over the Installation and Features of Welearn Bot on Windows and Linux.
 
-[![Tutorial](http://img.youtube.com/vi/hZfAOyDvK70/0.jpg)](http://www.youtube.com/watch?v=hZfAOyDvK70 "SlashDot Tutorials: WelearnBot")
+[![Tutorial](https://i.imgur.com/phA0DuJ.png)](http://www.youtube.com/watch?v=hZfAOyDvK70 "SlashDot Tutorials: WelearnBot")
 
 ## Installation
 This script runs on `python3`. To install it on your system, run
