@@ -182,7 +182,10 @@ def handle_files(
         course_name = course_ids[courseid]
         page = moodle.server(ServerFunctions.COURSE_CONTENTS, courseid=courseid)
         for item in page:
-            modules = item.get("modules", [])
+            try:
+                modules = item.get("modules", [])
+            except AttributeError:
+                pass
             for module in modules:
                 modname = module.get("modname", "")
                 if modname == "resource":
