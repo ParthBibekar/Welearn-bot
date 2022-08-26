@@ -72,9 +72,7 @@ calendar_id = c_xxxxxxxxxxxxxxxxxxxxxxxxxx@group.calendar.google.com
 ## Usage
 Run `welearn_bot -h` to get the following help message.
 ```
-usage: welearn_bot [-h] [--version] [-v] [-d] [-c] [-i [IGNORETYPES ...]] [-f]
-                   [-m] [-p PATHPREFIX]
-                   action [courses ...]
+usage: welearnbot.py [-h] [--version] [-v] [-d] [-c] [-i [IGNORETYPES ...]] [-r [ROLLS ...]] [-p PATHPREFIX] [-f] [-u] [-m] action [courses ...]
 
 A command line client for interacting with WeLearn.
 
@@ -82,12 +80,14 @@ positional arguments:
   action                choose from
                             files       - downloads files/resources
                             assignments - lists assignments, downloads attachments
+                            submissions - lists submission count, downloads attachments
                             urls        - lists urls
                             courses     - lists enrolled courses
                             whoami      - shows the user's name and exits
-                            Abbreviations such as any one of 'f', 'a', 'u', 'c', 'w' are supported.
-  courses               IDs of the courses to download files from. The word ALL selects everything
-                        from the [courses] section in .welearnrc or welearn.ini
+                            Abbreviations such as any one of 'f', 'a', 's', 'u', 'c', 'w' are supported.
+  courses               IDs of the courses to download files from. The word ALL selects all courses 
+                            from [submissions] section in .welearnrc or welearn.ini for 'submissions' action
+                            from the [courses] section in .welearnrc or welearn.ini for all other action
 
 options:
   -h, --help            show this help message and exit
@@ -97,11 +97,15 @@ options:
   -c, --gcalendar       add due assignments to Google Calendar with the 'assignments' action
   -i [IGNORETYPES ...], --ignoretypes [IGNORETYPES ...]
                         ignores the specified extensions when downloading, overrides .welearnrc
-  -f, --forcedownload   force download files even if already downloaded/ignored
-  -m, --missingdownload
-                        re-download those files which were downloaded earlier but deleted/moved from their location
+  -r [ROLLS ...], --rolls [ROLLS ...]
+                        roll numbers for which you want to download the submissions using the 'submissions' action
   -p PATHPREFIX, --pathprefix PATHPREFIX
                         save the downloads to a custom path, overrides .welearnrc
+  -f, --forcedownload   force download files even if already downloaded/ignored
+  -u, --update-course-cache
+                        update course cache. Use this class when you change [submissions] section of config
+  -m, --missingdownload
+                        re-download those files which were downloaded earlier but deleted/moved from their location
 ```
 See our article on [using command line options](https://github.com/ParthBibekar/Welearn-bot/wiki/Using-command-line-options) for a detailed breakdown.
 
@@ -173,4 +177,32 @@ Instead, you will see a message calling these files `Missing`. To download these
 ```
 welearn_bot -m files MA1101
 ```
+## Features for TAs
 
+### Notable features
+- The assignments for each subject are downloaded into it's own `submissions` folder.
+- Each student has it's own folder for each assignment.
+- If the assignment are in archived form (compressed), they are automatically uncompressed.
+
+### Config changes
+The users will have to add a `[submissions]` section to their config with the appropriate information (as shown below)
+
+```
+[submissions]
+CS1103 = ALL
+CS1101 = 21MS020, ... , 21MS120
+CS1102 = 21MS120,  21MS121,  21MS122,  21MS123,  21MS124,  21MS125,  21MS126
+CS1101 = 20MS011,  19MS112, 21MS020, ... , 21MS120
+```
+**Note** that you have to add key value pairs of courseid and the roll numbers for which to fetch the submissions
+The roll numbers can be entered in the following form:
+- `ALL` to fetch all submissions
+- a range of roll numbers
+- a explicit list of roll numbes
+- a mix of range and explicit roll numbers
+
+### CLI arguments
+- An additional action, `s (submissions)` has been exposed to the users for using this feature
+- The users can also specify list of roll numbers from the cli using `-r (--rolls)` option
+- CLI arguments override the config settings
+- The users can update the cache using the `-u` flag. Use this class when you change `[submissions]` section of config

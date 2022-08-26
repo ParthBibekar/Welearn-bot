@@ -1,4 +1,5 @@
 from moodlews.service import MoodleClient, ServerFunctions
+from welearnbot.utils import get_rolls
 
 from argparse import Namespace
 from configparser import RawConfigParser
@@ -17,6 +18,8 @@ def resolve_action_mode(args: Namespace) -> str:
         action = "files"
     elif "assignments".startswith(args.action[0]):
         action = "assignments"
+    elif "submissions".startswith(args.action[0]):
+        action = "submissions"
     elif "urls".startswith(args.action[0]):
         action = "urls"
     elif "courses".startswith(args.action[0]):
@@ -35,6 +38,11 @@ def resolve_action_mode(args: Namespace) -> str:
     if args.gcalendar and action != "assignments":
         print(
             "Can only use --gcalendar with 'assignments' action! Use the -h flag for usage."
+        )
+        sys.exit(errno.EPERM)
+    if args.rolls and action != "submissions":
+        print(
+            "Can only use --rolls with 'submission' action! Use the -h flag for usage."
         )
         sys.exit(errno.EPERM)
     return action
@@ -71,6 +79,11 @@ def get_credentials(config: RawConfigParser) -> Tuple[str, str]:
     return username, password
 
 
+def get_userid(moodle: MoodleClient):
+    site_info = moodle.server(ServerFunctions.SITE_INFO)
+    return site_info["userid"]
+
+
 def get_all_courses(config: RawConfigParser) -> List[str]:
     """Also extract the list of `ALL` courses"""
     try:
@@ -81,6 +94,20 @@ def get_all_courses(config: RawConfigParser) -> List[str]:
     all_courses = map(str.upper, all_courses)
     all_courses = list(all_courses)
     return all_courses
+
+
+def resolve_submission_details(config: RawConfigParser,) -> dict[str, List[str]]:
+    try:
+        courses = dict(config["submissions"])
+    except KeyError:
+        print("Invalid configuration!")
+        print("There is no field '[submissions]' in your config file")
+        sys.exit(errno.ENODATA)
+
+    submission_courses = {}
+    for (key, val) in courses.items():
+        submission_courses[key.upper()] = get_rolls(val)
+    return submission_courses
 
 
 def resolve_ignore_types(config: RawConfigParser, args: Namespace) -> List[str]:
