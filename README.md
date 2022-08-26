@@ -205,6 +205,4 @@ The roll numbers can be entered in the following form:
 - An additional action, `s (submissions)` has been exposed to the users for using this feature
 - The users can also specify list of roll numbers from the cli using `-r (--rolls)` option
 - CLI arguments override the config settings
-
-### Misc
-A new cache for course information is also added. The users can update the cache using the `-u` flag
+- The users can update the cache using the `-u` flag. Use this class when you change [submissions] section of config
