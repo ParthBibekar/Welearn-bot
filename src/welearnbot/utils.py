@@ -111,8 +111,7 @@ def download_resource(
 ) -> Tuple[str, str]:
     """Helper function to retrieve a file/resource from the server"""
     filename = resource["filename"]
-    for i in range(len(subfolders)):
-        subfolders[i] = subfolders[i].strip()
+    subfolders = [subfolder.strip() for subfolder in subfolders]
     course_dir = os.path.join(prefix, course, *subfolders)
     fileurl = resource["fileurl"]
     _, extension = os.path.splitext(filename)
