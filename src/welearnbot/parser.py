@@ -27,7 +27,7 @@ def setup_parser() -> ArgumentParser:
     from [submissions] section in .welearnrc or welearn.ini for 'submissions' action\n\
     from the [courses] section in .welearnrc or welearn.ini for all other action",
     )
-    parser.add_argument("--version", action="version", version="1.2.5")
+    parser.add_argument("--version", action="version", version="1.3.1")
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="show verbose warnings/errors",
     )
