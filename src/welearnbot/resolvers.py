@@ -50,12 +50,12 @@ def resolve_action_mode(args: Namespace) -> str:
 
 def get_config() -> RawConfigParser:
     """Read the .welearnrc file from the home directory, and extract username and password"""
-    if sys.platform == "linux" or sys.platform == "linux2":
-        configfile = os.path.expanduser("~/.welearnrc")
-    elif sys.platform == "darwin":
+    if sys.platform in ("linux", "linux2", "android", "darwin"):
         configfile = os.path.expanduser("~/.welearnrc")
     elif sys.platform == "win32":
         configfile = os.path.expanduser("~/welearn.ini")
+    else:
+        raise RuntimeError(f"Unsupported platform: {sys.platform}")
 
     config = RawConfigParser(allow_no_value=True)
     config.read(configfile)
